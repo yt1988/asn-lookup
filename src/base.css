@@ -1,8 +1,8 @@
 /* asn-lookup tokens and top bar. Same tokens as the other 1ms.dog tools, so the top bar and the page switch theme
-   together. The accent is teal. */
+   together. The accent is orange. */
 :root {
   --bg: #f6f6f7; --panel: #ffffff; --soft: #f0f0f2; --line: #e4e4e8;
-  --fg: #141416; --muted: #6e6e78; --ink: #0f8a7e; --ink-fg: #ffffff; --ink-soft: #0f8a7e14;
+  --fg: #141416; --muted: #6e6e78; --ink: #d9530c; --ink-fg: #ffffff; --ink-soft: #d9530c14;
   --warn: #b86e00; --warn-soft: #b86e001f; --bad: #d23a2f;
   --shadow: #0000001c;
   --f-ui: "Geist", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", "Yu Gothic", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans", system-ui, sans-serif;
@@ -12,13 +12,13 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #1c1c1c; --panel: #232323; --soft: #2a2a2a; --line: #363636;
-  --fg: #ededed; --muted: #a0a0a0; --ink: #2dd4bf; --ink-fg: #042f2b; --ink-soft: #2dd4bf1f;
+  --fg: #ededed; --muted: #a0a0a0; --ink: #fb923c; --ink-fg: #2b1203; --ink-soft: #fb923c1f;
   --warn: #f5a524; --warn-soft: #f5a52424; --bad: #f56565;
   --shadow: #00000080;
   color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #1c1c1c; --panel: #232323; --soft: #2a2a2a; --line: #363636;
-  --fg: #ededed; --muted: #a0a0a0; --ink: #2dd4bf; --ink-fg: #042f2b; --ink-soft: #2dd4bf1f;
+  --fg: #ededed; --muted: #a0a0a0; --ink: #fb923c; --ink-fg: #2b1203; --ink-soft: #fb923c1f;
   --warn: #f5a524; --warn-soft: #f5a52424; --bad: #f56565;
   --shadow: #00000080;
   color-scheme: dark; }

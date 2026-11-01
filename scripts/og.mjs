@@ -17,7 +17,7 @@ const logo = Buffer.from(await readFile(new URL("assets/logo-dark.svg", pub))).t
 const FONTS = { "zh-CN": "Microsoft YaHei", "zh-TW": "Microsoft JhengHei", ja: "Yu Gothic UI", ko: "Malgun Gothic" };
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 // the dark theme's colors (src/base.css)
-const INK = "#2dd4bf", BG = "#1c1c1c", FG = "#ededed", MU = "#a0a0a0", PANEL = "#232323", LINE = "#363636";
+const INK = "#fb923c", BG = "#1c1c1c", FG = "#ededed", MU = "#a0a0a0", PANEL = "#232323", LINE = "#363636";
 
 const cjkOf = s => /[　-鿿가-힯]/.test(s);
 const width = s => [...s].reduce((a, c) => a + (cjkOf(c) ? 2 : 1.05), 0);
@@ -60,7 +60,7 @@ function card(lang, d) {
 }
 
 // the tab icon: a network of three linked nodes in the accent color
-const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0f8a7e"/>
+const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#ea580c"/>
   <g stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M10 22 16 10 22 22Z" fill="none"/></g>
   <g fill="#fff"><circle cx="16" cy="10" r="3.6"/><circle cx="10" cy="22" r="3.6"/><circle cx="22" cy="22" r="3.6"/></g></svg>`;
 // an .ico holding one PNG
