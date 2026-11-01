@@ -1,0 +1,15 @@
+# ASN Lookup · 1ms.dog
+
+> Free IP and ASN lookup. For any IP address: the autonomous system announcing it, the announced prefix holding it,
+> the registry record (network name, organization, abuse contact) and reverse DNS. For any AS number: its name,
+> holder, country, registry and allocation date, every announced IPv4 and IPv6 prefix, its upstreams and
+> downstreams, and other AS numbers of the same holder. Prefixes come from RIPE NCC RIS, address-to-AS from
+> iptoasn.com, registrations from the five RIRs, refreshed daily.
+
+- Home: https://asn.1ms.dog/ (also /zh-cn/, /zh-tw/, /ja/, /ko/, /es/, /fr/, /de/, /pt/, /ru/)
+- An AS: https://asn.1ms.dog/AS4134 (every language: https://asn.1ms.dog/zh-cn/AS4134 …)
+- An address or prefix: https://asn.1ms.dog/ip/8.8.8.8, https://asn.1ms.dog/ip/1.0.0.0/24
+- JSON: https://asn.1ms.dog/api/as/4134 (record with every prefix), https://asn.1ms.dog/api/ip/8.8.8.8 (AS and prefix), https://asn.1ms.dog/api/me (your own address)
+- Source code: https://github.com/yt1988/asn-lookup
+
+- More 1ms.dog tools: https://1ms.dog/

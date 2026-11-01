@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja" data-paths="{&quot;en&quot;:&quot;/&quot;,&quot;zh-CN&quot;:&quot;/zh-cn/&quot;,&quot;zh-TW&quot;:&quot;/zh-tw/&quot;,&quot;ja&quot;:&quot;/ja/&quot;,&quot;ko&quot;:&quot;/ko/&quot;,&quot;es&quot;:&quot;/es/&quot;,&quot;fr&quot;:&quot;/fr/&quot;,&quot;de&quot;:&quot;/de/&quot;,&quot;pt&quot;:&quot;/pt/&quot;,&quot;ru&quot;:&quot;/ru/&quot;}">
+<head>
+<meta charset="utf-8">
+<script>(function(){var d=document.documentElement,th=null,s=null;try{th=localStorage.getItem("asn:theme");s=localStorage.getItem("asn:lang")}catch(e){}if(th==="light"||th==="dark")d.setAttribute("data-theme",th);if(!d.hasAttribute("data-root"))return;var P=JSON.parse(d.getAttribute("data-paths")||"{}"),l=null;if(P[s])l=s;for(var ls=navigator.languages||[navigator.language||"en"],i=0;!l&&!s&&i<ls.length;i++){var x=String(ls[i]).toLowerCase(),b=x.split("-")[0];l=b==="zh"?(/tw|hk|mo|hant/.test(x)?"zh-TW":"zh-CN"):P[b]?b:null}if(l&&l!=="en")location.replace(P[l]+location.pathname.slice(1)+location.search+location.hash)})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ASN 検索・IP アドレスの持ち主を調べる | 1ms.dog</title>
+<meta name="description" content="無料の ASN 検索と IP アドレス検索。IP アドレスがどのネットワーク（AS）のものか、各 AS 番号の組織、国、登録機関、IPv4・IPv6 プレフィックス、上流、同じ組織の他の ASN がわかります。">
+<meta name="keywords" content="ASN 検索, AS 番号, IP アドレス 検索, IP 持ち主, whois, BGP プレフィックス, IP アドレス 範囲">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="application-name" content="ASN 検索">
+<meta name="theme-color" content="#f6f6f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1c1c" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://asn.1ms.dog/ja/">
+<link rel="alternate" hreflang="en" href="https://asn.1ms.dog/">
+<link rel="alternate" hreflang="zh-CN" href="https://asn.1ms.dog/zh-cn/">
+<link rel="alternate" hreflang="zh-TW" href="https://asn.1ms.dog/zh-tw/">
+<link rel="alternate" hreflang="ja" href="https://asn.1ms.dog/ja/">
+<link rel="alternate" hreflang="ko" href="https://asn.1ms.dog/ko/">
+<link rel="alternate" hreflang="es" href="https://asn.1ms.dog/es/">
+<link rel="alternate" hreflang="fr" href="https://asn.1ms.dog/fr/">
+<link rel="alternate" hreflang="de" href="https://asn.1ms.dog/de/">
+<link rel="alternate" hreflang="pt" href="https://asn.1ms.dog/pt/">
+<link rel="alternate" hreflang="ru" href="https://asn.1ms.dog/ru/">
+<link rel="alternate" hreflang="x-default" href="https://asn.1ms.dog/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="1ms.dog">
+<meta property="og:title" content="ASN 検索・IP アドレスの持ち主を調べる | 1ms.dog">
+<meta property="og:description" content="無料の ASN 検索と IP アドレス検索。IP アドレスがどのネットワーク（AS）のものか、各 AS 番号の組織、国、登録機関、IPv4・IPv6 プレフィックス、上流、同じ組織の他の ASN がわかります。">
+<meta property="og:url" content="https://asn.1ms.dog/ja/">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:image" content="https://asn.1ms.dog/og/ja.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ASN 検索">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://asn.1ms.dog/og/ja.png">
+<meta name="twitter:title" content="ASN 検索・IP アドレスの持ち主を調べる | 1ms.dog">
+<meta name="twitter:description" content="無料の ASN 検索と IP アドレス検索。IP アドレスがどのネットワーク（AS）のものか、各 AS 番号の組織、国、登録機関、IPv4・IPv6 プレフィックス、上流、同じ組織の他の ASN がわかります。">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"ASN 検索 · 1ms.dog","url":"https://asn.1ms.dog/ja/","image":"https://asn.1ms.dog/og/ja.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"無料の ASN 検索と IP アドレス検索。IP アドレスがどのネットワーク（AS）のものか、各 AS 番号の組織、国、登録機関、IPv4・IPv6 プレフィックス、上流、同じ組織の他の ASN がわかります。","inLanguage":"ja","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASN とは？","acceptedAnswer":{"@type":"Answer","text":"ASN（自律システム番号）は、インターネット上で独自に経路制御を行うネットワークの番号です。通信事業者、クラウド、大学、大企業などが持っています。各 AS は担当する IP プレフィックスを BGP で隣接ネットワークに広告し、それによって他のネットワークは通信をどこへ送ればよいかを知ります。 番号は 5 つの地域インターネットレジストリ（APNIC、RIPE NCC、ARIN、LACNIC、AFRINIC）が割り当てます。例えば AS2516 は KDDI、AS13335 は Cloudflare です。"}},{"@type":"Question","name":"IP アドレスの持ち主を調べるには？","acceptedAnswer":{"@type":"Answer","text":"入力欄にアドレスを入れてください。そのアドレスを広告している AS とプレフィックス、登録機関の記録（ネットワーク名、組織、国、不正利用の連絡先）、逆引きが表示されます。 経路を広告している AS と登録上の組織は、しばしば別です。クラウドやホスティング会社が顧客自身のアドレスブロックを広告することがあります。"}},{"@type":"Question","name":"データの出どころと更新頻度は？","acceptedAnswer":{"@type":"Answer","text":"プレフィックスは RIPE NCC の Routing Information Service（RIS）から取得しています。数百のネットワークから経路表を集めており、10 以上のネットワークから見えるプレフィックスだけを載せています。アドレスから AS への対応は iptoasn.com（パブリックドメイン）、名前・国・割り当て日は 5 つのレジストリの公開ファイルです。どれも毎日更新します。 登録情報、逆引き、隣接 AS はページを開いたときにリアルタイムで問い合わせます（RDAP、DNS、RIPEstat）。"}},{"@type":"Question","name":"上流・下流とは？","acceptedAnswer":{"@type":"Answer","text":"上流は、この AS がトランジットを買っているネットワーク、またはこの AS とインターネットの大部分の間にあるネットワークです。下流は、この AS を通ってインターネットにつながるネットワークです。RIPE のコレクターが見た経路から推定しているため、一部の経路にしか現れないピアは別にまとめています。 経由する経路の数が多い順なので、重要な接続ほど上に来ます。"}},{"@type":"Question","name":"CN2、9929、CMI とは？","acceptedAnswer":{"@type":"Answer","text":"中国の 3 大通信事業者の高品質な国際網で、VPS の回線としてよく宣伝されます。AS4809 は China Telecom の CN2（通常のバックボーンは AS4134、通称 163）、AS9929 は China Unicom の高品質網（通常は AS4837、通称 169）、AS58453 は China Mobile International（国内網は AS9808）です。 サーバーの通信がどれを通るかは、あなたへの戻りの経路で決まります。traceroute で途中の AS 番号を確認できます。"}},{"@type":"Question","name":"プレフィックスの一覧をコピーできますか？","acceptedAnswer":{"@type":"Answer","text":"はい。「すべてコピー」で、その AS の IPv4 または IPv6 プレフィックスを 1 行に 1 つずつコピーできます。ファイアウォールやプロキシのルールにそのまま使えます。/api/as/\u003cAS 番号> では、どの AS でも完全なデータを JSON で取得できます。"}}]}]}</script>
+<link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/app.e067a99e8a.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="/ja/">
+      <span class="logo"><img class="logo-light" src="/assets/logo-light.svg" width="90" height="36" alt="1ms"><img class="logo-dark" src="/assets/logo-dark.svg" width="90" height="36" alt="1ms"></span>
+      <span class="brand-name" data-i="app_name">ASN 検索</span>
+    </a>
+    <div class="top-acts">
+      <label class="sel"><span class="sr" data-i="lang_label">言語</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5C6 12.5 5.2 10.5 5.2 8S6 3.5 8 1.5z"/></svg>
+        <select id="lang"><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="ja" selected>日本語</option><option value="ko">한국어</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ru">Русский</option></select>
+      </label>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="help"><span class="sr" data-i="faq_h">よくある質問</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.3v.1"/></svg>
+      </button>
+      <a class="icon-btn gh" href="https://github.com/yt1988/asn-lookup" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2z"/></svg></a>
+      <button class="icon-btn" id="theme" type="button" aria-label="テーマ">
+        <svg class="i-sys" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg>
+        <svg class="i-light" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3"/></svg>
+        <svg class="i-dark" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.8A5.8 5.8 0 0 1 6.2 2.5a5.8 5.8 0 1 0 7.3 7.3z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main>
+<section class="hero card">
+  <h1>IP・ASN 検索</h1>
+  <form class="ask" action="/ja/q" method="get" role="search" autocomplete="off">
+  <label class="sr" for="q" data-k="ph">IP、ASN、ドメイン（例：8.8.8.8、AS2516）</label>
+  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="IP、ASN、ドメイン（例：8.8.8.8、AS2516）" value="">
+  <button class="btn pri" type="submit">検索</button>
+</form>
+  <div class="me" id="me">
+    <div class="sec-h"><span>あなたの IP</span><a class="eg" id="meMore" href="/ja/">詳細 →</a></div>
+    <ul class="kv"><li id="meIp"><span>IP</span><b><i class="skl"></i></b></li><li id="meAs"><span>ASN</span><b><i class="skl"></i></b></li><li id="mePfx"><span>プレフィックス</span><b><i class="skl"></i></b></li><li id="meLoc"><span>場所</span><b><i class="skl"></i></b></li></ul>
+    <p class="links" id="meLinks"><a id="lnIpqs" hidden target="_blank" rel="noopener">この IP はクリーン？ →</a><a id="lnEgress" hidden target="_blank" rel="noopener">各サイトから見える IP →</a>&nbsp;</p>
+  </div>
+</section>
+<section class="card pop">
+  <h2>主なネットワーク</h2>
+  <div class="grp"><h3>中国本土の通信事業者</h3><ul class="chips"><li><a class="asl" href="/ja/AS4134"><b>AS4134</b> <span>中国電信 163 バックボーン</span></a></li><li><a class="asl" href="/ja/AS4809"><b>AS4809</b> <span>中国電信 CN2</span></a></li><li><a class="asl" href="/ja/AS23764"><b>AS23764</b> <span>中国電信グローバル CTG</span></a></li><li><a class="asl" href="/ja/AS4837"><b>AS4837</b> <span>中国聯通 169 バックボーン</span></a></li><li><a class="asl" href="/ja/AS9929"><b>AS9929</b> <span>中国聯通 9929（CUII）</span></a></li><li><a class="asl" href="/ja/AS10099"><b>AS10099</b> <span>中国聯通グローバル</span></a></li><li><a class="asl" href="/ja/AS9808"><b>AS9808</b> <span>中国移動</span></a></li><li><a class="asl" href="/ja/AS58453"><b>AS58453</b> <span>中国移動インターナショナル CMI</span></a></li><li><a class="asl" href="/ja/AS4538"><b>AS4538</b> <span>中国教育研究網 CERNET</span></a></li></ul></div><div class="grp"><h3>クラウドと CDN</h3><ul class="chips"><li><a class="asl" href="/ja/AS13335"><b>AS13335</b> <span>Cloudflare</span></a></li><li><a class="asl" href="/ja/AS15169"><b>AS15169</b> <span>Google</span></a></li><li><a class="asl" href="/ja/AS16509"><b>AS16509</b> <span>Amazon (AWS)</span></a></li><li><a class="asl" href="/ja/AS8075"><b>AS8075</b> <span>Microsoft</span></a></li><li><a class="asl" href="/ja/AS45102"><b>AS45102</b> <span>Alibaba Cloud（国際）</span></a></li><li><a class="asl" href="/ja/AS37963"><b>AS37963</b> <span>Alibaba Cloud（中国本土）</span></a></li><li><a class="asl" href="/ja/AS132203"><b>AS132203</b> <span>Tencent Cloud（国際）</span></a></li><li><a class="asl" href="/ja/AS45090"><b>AS45090</b> <span>Tencent Cloud（中国本土）</span></a></li><li><a class="asl" href="/ja/AS55990"><b>AS55990</b> <span>Huawei Cloud</span></a></li><li><a class="asl" href="/ja/AS31898"><b>AS31898</b> <span>Oracle Cloud</span></a></li><li><a class="asl" href="/ja/AS14061"><b>AS14061</b> <span>DigitalOcean</span></a></li><li><a class="asl" href="/ja/AS20473"><b>AS20473</b> <span>Vultr</span></a></li><li><a class="asl" href="/ja/AS63949"><b>AS63949</b> <span>Akamai (Linode)</span></a></li><li><a class="asl" href="/ja/AS16276"><b>AS16276</b> <span>OVHcloud</span></a></li><li><a class="asl" href="/ja/AS24940"><b>AS24940</b> <span>Hetzner</span></a></li><li><a class="asl" href="/ja/AS32934"><b>AS32934</b> <span>Meta</span></a></li><li><a class="asl" href="/ja/AS20940"><b>AS20940</b> <span>Akamai</span></a></li><li><a class="asl" href="/ja/AS54113"><b>AS54113</b> <span>Fastly</span></a></li></ul></div><div class="grp"><h3>通信事業者とバックボーン</h3><ul class="chips"><li><a class="asl" href="/ja/AS3462"><b>AS3462</b> <span>中華電信 HiNet</span></a></li><li><a class="asl" href="/ja/AS4760"><b>AS4760</b> <span>HKT</span></a></li><li><a class="asl" href="/ja/AS9304"><b>AS9304</b> <span>HGC</span></a></li><li><a class="asl" href="/ja/AS3491"><b>AS3491</b> <span>PCCW Global</span></a></li><li><a class="asl" href="/ja/AS2914"><b>AS2914</b> <span>NTT</span></a></li><li><a class="asl" href="/ja/AS2516"><b>AS2516</b> <span>KDDI</span></a></li><li><a class="asl" href="/ja/AS2497"><b>AS2497</b> <span>IIJ</span></a></li><li><a class="asl" href="/ja/AS4766"><b>AS4766</b> <span>KT（韓国通信）</span></a></li><li><a class="asl" href="/ja/AS7473"><b>AS7473</b> <span>Singtel</span></a></li><li><a class="asl" href="/ja/AS4637"><b>AS4637</b> <span>Telstra</span></a></li><li><a class="asl" href="/ja/AS3356"><b>AS3356</b> <span>Lumen (Level 3)</span></a></li><li><a class="asl" href="/ja/AS1299"><b>AS1299</b> <span>Arelion (Telia)</span></a></li><li><a class="asl" href="/ja/AS174"><b>AS174</b> <span>Cogent</span></a></li><li><a class="asl" href="/ja/AS6939"><b>AS6939</b> <span>Hurricane Electric</span></a></li><li><a class="asl" href="/ja/AS3257"><b>AS3257</b> <span>GTT</span></a></li><li><a class="asl" href="/ja/AS6453"><b>AS6453</b> <span>TATA Communications</span></a></li></ul></div>
+</section>
+  </main>
+  <footer class="foot m">データ：RIPE NCC RIS、iptoasn.com、5 つの RIR、RDAP。毎日更新。</footer>
+</div>
+<div class="scrim" id="help" hidden>
+  <div class="dialog help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+    <div class="dlg-h"><h2 id="helpT" data-i="faq_h">よくある質問</h2>
+      <button class="icon-btn" data-close type="button" aria-label="閉じる"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <div class="help-b">
+      <nav class="help-nav" id="helpNav" role="tablist"><button type="button" role="tab" data-hq="0" aria-selected="true">ASN とは？</button><button type="button" role="tab" data-hq="1" aria-selected="false">IP アドレスの持ち主を調べるには？</button><button type="button" role="tab" data-hq="2" aria-selected="false">データの出どころと更新頻度は？</button><button type="button" role="tab" data-hq="3" aria-selected="false">上流・下流とは？</button><button type="button" role="tab" data-hq="4" aria-selected="false">CN2、9929、CMI とは？</button><button type="button" role="tab" data-hq="5" aria-selected="false">プレフィックスの一覧をコピーできますか？</button></nav>
+      <div class="help-pick">
+        <button class="icon-btn" type="button" data-hstep="-1" aria-label="前へ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4L6 8l4 4"/></svg></button>
+        <select id="helpSel" aria-labelledby="helpT"></select>
+        <button class="icon-btn" type="button" data-hstep="1" aria-label="次へ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+      </div>
+      <div class="help-c" id="helpC"><article data-hqb="0"><h3>ASN とは？</h3><p>ASN（自律システム番号）は、インターネット上で独自に経路制御を行うネットワークの番号です。通信事業者、クラウド、大学、大企業などが持っています。各 AS は担当する IP プレフィックスを BGP で隣接ネットワークに広告し、それによって他のネットワークは通信をどこへ送ればよいかを知ります。</p><p>番号は 5 つの地域インターネットレジストリ（APNIC、RIPE NCC、ARIN、LACNIC、AFRINIC）が割り当てます。例えば AS2516 は KDDI、AS13335 は Cloudflare です。</p></article><article data-hqb="1" hidden><h3>IP アドレスの持ち主を調べるには？</h3><p>入力欄にアドレスを入れてください。そのアドレスを広告している AS とプレフィックス、登録機関の記録（ネットワーク名、組織、国、不正利用の連絡先）、逆引きが表示されます。</p><p>経路を広告している AS と登録上の組織は、しばしば別です。クラウドやホスティング会社が顧客自身のアドレスブロックを広告することがあります。</p></article><article data-hqb="2" hidden><h3>データの出どころと更新頻度は？</h3><p>プレフィックスは RIPE NCC の Routing Information Service（RIS）から取得しています。数百のネットワークから経路表を集めており、10 以上のネットワークから見えるプレフィックスだけを載せています。アドレスから AS への対応は iptoasn.com（パブリックドメイン）、名前・国・割り当て日は 5 つのレジストリの公開ファイルです。どれも毎日更新します。</p><p>登録情報、逆引き、隣接 AS はページを開いたときにリアルタイムで問い合わせます（RDAP、DNS、RIPEstat）。</p></article><article data-hqb="3" hidden><h3>上流・下流とは？</h3><p>上流は、この AS がトランジットを買っているネットワーク、またはこの AS とインターネットの大部分の間にあるネットワークです。下流は、この AS を通ってインターネットにつながるネットワークです。RIPE のコレクターが見た経路から推定しているため、一部の経路にしか現れないピアは別にまとめています。</p><p>経由する経路の数が多い順なので、重要な接続ほど上に来ます。</p></article><article data-hqb="4" hidden><h3>CN2、9929、CMI とは？</h3><p>中国の 3 大通信事業者の高品質な国際網で、VPS の回線としてよく宣伝されます。AS4809 は China Telecom の CN2（通常のバックボーンは AS4134、通称 163）、AS9929 は China Unicom の高品質網（通常は AS4837、通称 169）、AS58453 は China Mobile International（国内網は AS9808）です。</p><p>サーバーの通信がどれを通るかは、あなたへの戻りの経路で決まります。traceroute で途中の AS 番号を確認できます。</p></article><article data-hqb="5" hidden><h3>プレフィックスの一覧をコピーできますか？</h3><p>はい。「すべてコピー」で、その AS の IPv4 または IPv6 プレフィックスを 1 行に 1 つずつコピーできます。ファイアウォールやプロキシのルールにそのまま使えます。/api/as/&lt;AS 番号&gt; では、どの AS でも完全なデータを JSON で取得できます。</p></article></div>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="data">{"lang":"ja","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
+<script src="/assets/l.ja.090b626e9f.js"></script>
+<script src="/assets/app.e3a1ca16e2.js"></script>
+</body>
+</html>

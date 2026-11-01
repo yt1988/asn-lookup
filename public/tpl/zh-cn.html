@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN" data-paths="{&quot;en&quot;:&quot;/&quot;,&quot;zh-CN&quot;:&quot;/zh-cn/&quot;,&quot;zh-TW&quot;:&quot;/zh-tw/&quot;,&quot;ja&quot;:&quot;/ja/&quot;,&quot;ko&quot;:&quot;/ko/&quot;,&quot;es&quot;:&quot;/es/&quot;,&quot;fr&quot;:&quot;/fr/&quot;,&quot;de&quot;:&quot;/de/&quot;,&quot;pt&quot;:&quot;/pt/&quot;,&quot;ru&quot;:&quot;/ru/&quot;}"{{rootAttr}}>
+<head>
+<meta charset="utf-8">
+<script>(function(){var d=document.documentElement,th=null,s=null;try{th=localStorage.getItem("asn:theme");s=localStorage.getItem("asn:lang")}catch(e){}if(th==="light"||th==="dark")d.setAttribute("data-theme",th);if(!d.hasAttribute("data-root"))return;var P=JSON.parse(d.getAttribute("data-paths")||"{}"),l=null;if(P[s])l=s;for(var ls=navigator.languages||[navigator.language||"en"],i=0;!l&&!s&&i<ls.length;i++){var x=String(ls[i]).toLowerCase(),b=x.split("-")[0];l=b==="zh"?(/tw|hk|mo|hant/.test(x)?"zh-TW":"zh-CN"):P[b]?b:null}if(l&&l!=="en")location.replace(P[l]+location.pathname.slice(1)+location.search+location.hash)})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{{head}}
+<link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/app.e067a99e8a.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="/zh-cn/">
+      <span class="logo"><img class="logo-light" src="/assets/logo-light.svg" width="90" height="36" alt="1ms"><img class="logo-dark" src="/assets/logo-dark.svg" width="90" height="36" alt="1ms"></span>
+      <span class="brand-name" data-i="app_name">ASN 查询</span>
+    </a>
+    <div class="top-acts">
+      <label class="sel"><span class="sr" data-i="lang_label">语言</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5C6 12.5 5.2 10.5 5.2 8S6 3.5 8 1.5z"/></svg>
+        <select id="lang"><option value="en">English</option><option value="zh-CN" selected>简体中文</option><option value="zh-TW">繁體中文</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ru">Русский</option></select>
+      </label>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="help"><span class="sr" data-i="faq_h">常见问题</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.3v.1"/></svg>
+      </button>
+      <a class="icon-btn gh" href="https://github.com/yt1988/asn-lookup" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2z"/></svg></a>
+      <button class="icon-btn" id="theme" type="button" aria-label="主题">
+        <svg class="i-sys" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg>
+        <svg class="i-light" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3"/></svg>
+        <svg class="i-dark" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.8A5.8 5.8 0 0 1 6.2 2.5a5.8 5.8 0 1 0 7.3 7.3z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main>
+{{main}}
+  </main>
+  <footer class="foot m">{{foot}}</footer>
+</div>
+<div class="scrim" id="help" hidden>
+  <div class="dialog help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+    <div class="dlg-h"><h2 id="helpT" data-i="faq_h">常见问题</h2>
+      <button class="icon-btn" data-close type="button" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <div class="help-b">
+      <nav class="help-nav" id="helpNav" role="tablist"><button type="button" role="tab" data-hq="0" aria-selected="true">ASN 是什么？</button><button type="button" role="tab" data-hq="1" aria-selected="false">怎么查一个 IP 属于哪家？</button><button type="button" role="tab" data-hq="2" aria-selected="false">数据从哪来？多久更新？</button><button type="button" role="tab" data-hq="3" aria-selected="false">上游、下游是什么意思？</button><button type="button" role="tab" data-hq="4" aria-selected="false">CN2、9929、CMI 是什么？</button><button type="button" role="tab" data-hq="5" aria-selected="false">能复制 IP 段列表吗？</button></nav>
+      <div class="help-pick">
+        <button class="icon-btn" type="button" data-hstep="-1" aria-label="上一条"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4L6 8l4 4"/></svg></button>
+        <select id="helpSel" aria-labelledby="helpT"></select>
+        <button class="icon-btn" type="button" data-hstep="1" aria-label="下一条"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+      </div>
+      <div class="help-c" id="helpC"><article data-hqb="0"><h3>ASN 是什么？</h3><p>ASN（自治系统号）是互联网上一个独立运行路由的网络的编号，比如一家运营商、一家云厂商、一所大学或一家大公司。每个 AS 通过 BGP 向邻居宣告自己负责的 IP 段，互联网上的其他网络就知道该把流量送到哪里。</p><p>AS 号由五大区域互联网注册机构（APNIC、RIPE NCC、ARIN、LACNIC、AFRINIC）分配。比如 AS4134 是中国电信 163 骨干网，AS13335 是 Cloudflare。</p></article><article data-hqb="1" hidden><h3>怎么查一个 IP 属于哪家？</h3><p>在输入框里填 IP 地址。页面会显示由哪个 AS 宣告、所在前缀，注册机构登记的信息（网络名称、组织、国家/地区、滥用投诉邮箱）和反向解析。</p><p>负责路由的 AS 和登记的组织经常不是同一家：云厂商、IDC 可以替客户宣告客户自己的 IP 段。</p></article><article data-hqb="2" hidden><h3>数据从哪来？多久更新？</h3><p>前缀来自 RIPE NCC 的路由信息服务（RIS），它从几百个网络收集路由表，至少 10 个网络看得到的前缀才算数。IP 对应的 AS 用的是 iptoasn.com（公有领域）。名称、国家/地区和分配日期来自五大注册机构公开的文件。这些数据每天更新。</p><p>注册信息、反向解析和邻居是打开页面时实时查询的（RDAP、DNS、RIPEstat）。</p></article><article data-hqb="3" hidden><h3>上游、下游是什么意思？</h3><p>上游是这个 AS 购买转接的网络，或者位于它和大部分互联网之间的网络；下游是通过它接入互联网的网络。这是根据 RIPE 采集器看到的路径推断的，只在部分路径上出现的对等网络单独列出。</p><p>列表按经过每个邻居的路径数排序，最重要的连接排在前面。</p></article><article data-hqb="4" hidden><h3>CN2、9929、CMI 是什么？</h3><p>它们是三大运营商的精品国际网络，买 VPS 时常看到：AS4809 是中国电信 CN2（普通骨干网是 AS4134，俗称 163），AS9929 是中国联通精品网（普通的是 AS4837，俗称 169），AS58453 是中国移动国际 CMI（国内网是 AS9808）。</p><p>服务器的流量走哪条，取决于回到你这边的路由；用 traceroute 能看到沿途经过的 AS 号。</p></article><article data-hqb="5" hidden><h3>能复制 IP 段列表吗？</h3><p>可以。「复制全部」会把这个 AS 的全部 IPv4 或 IPv6 前缀复制出来，一行一个，可以直接用在防火墙或代理分流规则里。任何 AS 都可以用 /api/as/&lt;AS 号&gt; 拿到 JSON 格式的完整数据。</p></article></div>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="data">{{data}}</script>
+<script src="/assets/l.zh-cn.8eb6b213f7.js"></script>
+<script src="/assets/app.e3a1ca16e2.js"></script>
+</body>
+</html>

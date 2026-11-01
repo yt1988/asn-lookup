@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru" data-paths="{&quot;en&quot;:&quot;/&quot;,&quot;zh-CN&quot;:&quot;/zh-cn/&quot;,&quot;zh-TW&quot;:&quot;/zh-tw/&quot;,&quot;ja&quot;:&quot;/ja/&quot;,&quot;ko&quot;:&quot;/ko/&quot;,&quot;es&quot;:&quot;/es/&quot;,&quot;fr&quot;:&quot;/fr/&quot;,&quot;de&quot;:&quot;/de/&quot;,&quot;pt&quot;:&quot;/pt/&quot;,&quot;ru&quot;:&quot;/ru/&quot;}"{{rootAttr}}>
+<head>
+<meta charset="utf-8">
+<script>(function(){var d=document.documentElement,th=null,s=null;try{th=localStorage.getItem("asn:theme");s=localStorage.getItem("asn:lang")}catch(e){}if(th==="light"||th==="dark")d.setAttribute("data-theme",th);if(!d.hasAttribute("data-root"))return;var P=JSON.parse(d.getAttribute("data-paths")||"{}"),l=null;if(P[s])l=s;for(var ls=navigator.languages||[navigator.language||"en"],i=0;!l&&!s&&i<ls.length;i++){var x=String(ls[i]).toLowerCase(),b=x.split("-")[0];l=b==="zh"?(/tw|hk|mo|hant/.test(x)?"zh-TW":"zh-CN"):P[b]?b:null}if(l&&l!=="en")location.replace(P[l]+location.pathname.slice(1)+location.search+location.hash)})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{{head}}
+<link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/app.e067a99e8a.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="/ru/">
+      <span class="logo"><img class="logo-light" src="/assets/logo-light.svg" width="90" height="36" alt="1ms"><img class="logo-dark" src="/assets/logo-dark.svg" width="90" height="36" alt="1ms"></span>
+      <span class="brand-name" data-i="app_name">Поиск ASN</span>
+    </a>
+    <div class="top-acts">
+      <label class="sel"><span class="sr" data-i="lang_label">Язык</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5C6 12.5 5.2 10.5 5.2 8S6 3.5 8 1.5z"/></svg>
+        <select id="lang"><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ru" selected>Русский</option></select>
+      </label>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="help"><span class="sr" data-i="faq_h">Вопросы</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.3v.1"/></svg>
+      </button>
+      <a class="icon-btn gh" href="https://github.com/yt1988/asn-lookup" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2z"/></svg></a>
+      <button class="icon-btn" id="theme" type="button" aria-label="Тема">
+        <svg class="i-sys" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg>
+        <svg class="i-light" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3"/></svg>
+        <svg class="i-dark" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.8A5.8 5.8 0 0 1 6.2 2.5a5.8 5.8 0 1 0 7.3 7.3z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main>
+{{main}}
+  </main>
+  <footer class="foot m">{{foot}}</footer>
+</div>
+<div class="scrim" id="help" hidden>
+  <div class="dialog help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+    <div class="dlg-h"><h2 id="helpT" data-i="faq_h">Вопросы</h2>
+      <button class="icon-btn" data-close type="button" aria-label="Закрыть"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <div class="help-b">
+      <nav class="help-nav" id="helpNav" role="tablist"><button type="button" role="tab" data-hq="0" aria-selected="true">Что такое ASN?</button><button type="button" role="tab" data-hq="1" aria-selected="false">Как узнать, чей это IP?</button><button type="button" role="tab" data-hq="2" aria-selected="false">Откуда данные и как часто они обновляются?</button><button type="button" role="tab" data-hq="3" aria-selected="false">Что значат аплинки и даунлинки?</button><button type="button" role="tab" data-hq="4" aria-selected="false">Что такое CN2, 9929 и CMI?</button><button type="button" role="tab" data-hq="5" aria-selected="false">Можно скопировать список префиксов?</button></nav>
+      <div class="help-pick">
+        <button class="icon-btn" type="button" data-hstep="-1" aria-label="Назад"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4L6 8l4 4"/></svg></button>
+        <select id="helpSel" aria-labelledby="helpT"></select>
+        <button class="icon-btn" type="button" data-hstep="1" aria-label="Далее"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+      </div>
+      <div class="help-c" id="helpC"><article data-hqb="0"><h3>Что такое ASN?</h3><p>Номер автономной системы (ASN) обозначает сеть, которая сама управляет маршрутизацией в интернете: оператора связи, облако, университет, крупную компанию. Каждая такая сеть анонсирует соседям по BGP префиксы IP, которые она обслуживает, — так остальной интернет узнаёт, куда отправлять трафик.</p><p>Номера выдают пять региональных интернет-регистратур (APNIC, RIPE NCC, ARIN, LACNIC и AFRINIC). Например, AS12389 — Ростелеком, AS13335 — Cloudflare.</p></article><article data-hqb="1" hidden><h3>Как узнать, чей это IP?</h3><p>Введите адрес в поле. Страница покажет, какая AS его анонсирует и в каком префиксе, запись регистратора для блока (имя сети, организация, страна, контакт abuse) и обратную DNS.</p><p>AS, которая маршрутизирует адрес, и организация, на которую он зарегистрирован, часто разные: облако или хостер может анонсировать собственный блок клиента.</p></article><article data-hqb="2" hidden><h3>Откуда данные и как часто они обновляются?</h3><p>Префиксы берутся из Routing Information Service RIPE NCC, который собирает таблицы маршрутизации сотен сетей; префикс учитывается, если его видят хотя бы десять из них. Соответствие адреса и AS — из iptoasn.com (общественное достояние). Имена, страны и даты выделения — из опубликованных файлов пяти регистратур. Всё обновляется ежедневно.</p><p>Запись регистратора, обратная DNS и соседи запрашиваются в реальном времени (RDAP, DNS, RIPEstat) при открытии страницы.</p></article><article data-hqb="3" hidden><h3>Что значат аплинки и даунлинки?</h3><p>Аплинк — сеть, у которой эта AS покупает транзит или которая стоит между ней и большей частью интернета; даунлинк выходит в интернет через неё. Это вычисляется по маршрутам, которые видят коллекторы RIPE, поэтому пиры и сети, встречающиеся лишь на части маршрутов, вынесены отдельно.</p><p>Список отсортирован по числу маршрутов через каждого соседа: самые важные связи — первыми.</p></article><article data-hqb="4" hidden><h3>Что такое CN2, 9929 и CMI?</h3><p>Это премиальные международные сети трёх китайских операторов, которые часто рекламируют у VPS с маршрутами в Китай: AS4809 — CN2 China Telecom (обычная магистраль — AS4134, «163»), AS9929 — премиальная сеть China Unicom (обычная — AS4837, «169»), AS58453 — China Mobile International (внутренняя сеть — AS9808).</p><p>Какой сетью пойдёт трафик сервера, зависит от обратного маршрута к вам; traceroute покажет номера AS на пути.</p></article><article data-hqb="5" hidden><h3>Можно скопировать список префиксов?</h3><p>Да. «Копировать все» копирует все префиксы IPv4 или IPv6 этой AS по одному в строке — готово для файрвола или правил прокси. /api/as/&lt;asn&gt; отдаёт полные данные любой AS в JSON.</p></article></div>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="data">{{data}}</script>
+<script src="/assets/l.ru.02af891d14.js"></script>
+<script src="/assets/app.e3a1ca16e2.js"></script>
+</body>
+</html>

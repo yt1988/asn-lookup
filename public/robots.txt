@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /q
+Disallow: /tpl/
+Disallow: /data/
+
+Sitemap: https://asn.1ms.dog/sitemap.xml

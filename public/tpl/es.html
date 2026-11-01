@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es" data-paths="{&quot;en&quot;:&quot;/&quot;,&quot;zh-CN&quot;:&quot;/zh-cn/&quot;,&quot;zh-TW&quot;:&quot;/zh-tw/&quot;,&quot;ja&quot;:&quot;/ja/&quot;,&quot;ko&quot;:&quot;/ko/&quot;,&quot;es&quot;:&quot;/es/&quot;,&quot;fr&quot;:&quot;/fr/&quot;,&quot;de&quot;:&quot;/de/&quot;,&quot;pt&quot;:&quot;/pt/&quot;,&quot;ru&quot;:&quot;/ru/&quot;}"{{rootAttr}}>
+<head>
+<meta charset="utf-8">
+<script>(function(){var d=document.documentElement,th=null,s=null;try{th=localStorage.getItem("asn:theme");s=localStorage.getItem("asn:lang")}catch(e){}if(th==="light"||th==="dark")d.setAttribute("data-theme",th);if(!d.hasAttribute("data-root"))return;var P=JSON.parse(d.getAttribute("data-paths")||"{}"),l=null;if(P[s])l=s;for(var ls=navigator.languages||[navigator.language||"en"],i=0;!l&&!s&&i<ls.length;i++){var x=String(ls[i]).toLowerCase(),b=x.split("-")[0];l=b==="zh"?(/tw|hk|mo|hant/.test(x)?"zh-TW":"zh-CN"):P[b]?b:null}if(l&&l!=="en")location.replace(P[l]+location.pathname.slice(1)+location.search+location.hash)})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{{head}}
+<link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/app.e067a99e8a.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="/es/">
+      <span class="logo"><img class="logo-light" src="/assets/logo-light.svg" width="90" height="36" alt="1ms"><img class="logo-dark" src="/assets/logo-dark.svg" width="90" height="36" alt="1ms"></span>
+      <span class="brand-name" data-i="app_name">Consulta ASN</span>
+    </a>
+    <div class="top-acts">
+      <label class="sel"><span class="sr" data-i="lang_label">Idioma</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5C6 12.5 5.2 10.5 5.2 8S6 3.5 8 1.5z"/></svg>
+        <select id="lang"><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="es" selected>Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ru">Русский</option></select>
+      </label>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="help"><span class="sr" data-i="faq_h">Preguntas</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.3v.1"/></svg>
+      </button>
+      <a class="icon-btn gh" href="https://github.com/yt1988/asn-lookup" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.4 7.4 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.7-3.6 3.9.3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2z"/></svg></a>
+      <button class="icon-btn" id="theme" type="button" aria-label="Tema">
+        <svg class="i-sys" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5M8 11.5V14"/></svg>
+        <svg class="i-light" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3"/></svg>
+        <svg class="i-dark" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.8A5.8 5.8 0 0 1 6.2 2.5a5.8 5.8 0 1 0 7.3 7.3z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main>
+{{main}}
+  </main>
+  <footer class="foot m">{{foot}}</footer>
+</div>
+<div class="scrim" id="help" hidden>
+  <div class="dialog help" role="dialog" aria-modal="true" aria-labelledby="helpT">
+    <div class="dlg-h"><h2 id="helpT" data-i="faq_h">Preguntas</h2>
+      <button class="icon-btn" data-close type="button" aria-label="Cerrar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <div class="help-b">
+      <nav class="help-nav" id="helpNav" role="tablist"><button type="button" role="tab" data-hq="0" aria-selected="true">¿Qué es un ASN?</button><button type="button" role="tab" data-hq="1" aria-selected="false">¿Cómo sé de quién es una IP?</button><button type="button" role="tab" data-hq="2" aria-selected="false">¿De dónde salen los datos y cada cuánto se actualizan?</button><button type="button" role="tab" data-hq="3" aria-selected="false">¿Qué significan proveedores y clientes?</button><button type="button" role="tab" data-hq="4" aria-selected="false">¿Qué son CN2, 9929 y CMI?</button><button type="button" role="tab" data-hq="5" aria-selected="false">¿Puedo copiar la lista de prefijos?</button></nav>
+      <div class="help-pick">
+        <button class="icon-btn" type="button" data-hstep="-1" aria-label="Anterior"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4L6 8l4 4"/></svg></button>
+        <select id="helpSel" aria-labelledby="helpT"></select>
+        <button class="icon-btn" type="button" data-hstep="1" aria-label="Siguiente"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+      </div>
+      <div class="help-c" id="helpC"><article data-hqb="0"><h3>¿Qué es un ASN?</h3><p>Un número de sistema autónomo (ASN) identifica una red que gestiona su propio enrutamiento en internet: un operador, una nube, una universidad, una gran empresa. Cada una anuncia por BGP a sus vecinos los prefijos IP que transporta, y así el resto de internet sabe adónde enviar el tráfico.</p><p>Los números los reparten los cinco registros regionales de internet (APNIC, RIPE NCC, ARIN, LACNIC y AFRINIC). Por ejemplo, AS3352 es Telefónica España y AS13335 es Cloudflare.</p></article><article data-hqb="1" hidden><h3>¿Cómo sé de quién es una IP?</h3><p>Escribe la dirección en la casilla. La página muestra qué AS la anuncia y en qué prefijo, el registro del bloque (nombre de red, organización, país, contacto de abuso) y su DNS inverso.</p><p>El AS que enruta una dirección y la organización a la que está registrada suelen ser distintos: una nube o un hosting puede anunciar el bloque propio de un cliente.</p></article><article data-hqb="2" hidden><h3>¿De dónde salen los datos y cada cuánto se actualizan?</h3><p>Los prefijos vienen del Routing Information Service de RIPE NCC, que recoge tablas de rutas de cientos de redes; un prefijo aparece cuando lo ven al menos diez. La correspondencia de dirección a AS es de iptoasn.com (dominio público). Nombres, países y fechas de asignación vienen de los ficheros publicados por los cinco registros. Todo se actualiza a diario.</p><p>El registro, el DNS inverso y los vecinos se consultan en directo (RDAP, DNS, RIPEstat) al abrir la página.</p></article><article data-hqb="3" hidden><h3>¿Qué significan proveedores y clientes?</h3><p>Un proveedor (upstream) es una red a la que este AS compra tránsito, o que está entre él y la mayor parte de internet; un cliente (downstream) es una red que llega a internet a través de él. Se deduce de las rutas que ven los colectores de RIPE, así que los peers y las redes que solo aparecen en algunas rutas van aparte.</p><p>La lista se ordena por cuántas rutas pasan por cada vecino: las conexiones más importantes van primero.</p></article><article data-hqb="4" hidden><h3>¿Qué son CN2, 9929 y CMI?</h3><p>Son las redes internacionales premium de los tres operadores chinos, muy anunciadas en VPS con rutas hacia China: AS4809 es CN2 de China Telecom (la troncal normal es AS4134, «163»), AS9929 es la red premium de China Unicom (la normal es AS4837, «169») y AS58453 es China Mobile International (la red nacional es AS9808).</p><p>Qué red usa el tráfico de un servidor depende de la ruta de vuelta hacia ti; un traceroute muestra los números AS del camino.</p></article><article data-hqb="5" hidden><h3>¿Puedo copiar la lista de prefijos?</h3><p>Sí. «Copiar todo» copia todos los prefijos IPv4 o IPv6 del AS, uno por línea, listos para un cortafuegos o unas reglas de proxy. /api/as/&lt;asn&gt; devuelve los datos completos de cualquier AS en JSON.</p></article></div>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="data">{{data}}</script>
+<script src="/assets/l.es.fb14a5d471.js"></script>
+<script src="/assets/app.e3a1ca16e2.js"></script>
+</body>
+</html>

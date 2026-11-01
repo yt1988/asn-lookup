@@ -1,0 +1,91 @@
+# ASN 查询
+
+[English](README.md) · **简体中文**
+
+这个 IP 是哪家的？AS4134 是谁？[ASN 查询](https://asn.1ms.dog) 给每个 IP 地址和每个 AS 号一个页面：由哪个 AS 宣告、所在前缀、注册信息，以及这个 AS 的全部 IPv4 / IPv6 前缀、上游下游和同一机构的其他 ASN。
+
+**在线使用：** https://asn.1ms.dog
+
+## 能看到什么
+
+- **任意 IP 或前缀**（`/ip/8.8.8.8`、`/ip/1.0.0.0/24`）：宣告它的 AS、所在的宣告前缀、地址范围、国家/地区；注册机构的 RDAP 记录（网络名称、组织、滥用投诉邮箱）和反向解析。
+- **任意 AS**（`/AS4134`）：名称、持有者、国家/地区、注册机构和分配日期；宣告的前缀数量和地址数；全部前缀列表（可一键复制，用于防火墙或分流规则）；RIPE 采集器看到的上游、下游和对等；同一机构名下的其他 ASN。
+- **域名**：搜索框里输入域名，先解析成 IP 再查。
+- **你自己的 IP**：首页直接显示本机出口所在的 AS 和前缀。
+
+每个 AS 页面都由服务端渲染，标题、描述、正文在 HTML 里就是完整的，10 种语言各一个地址，并列在站点地图里（约 8.8 万个有路由的 AS）。
+
+## 数据来源
+
+| 来源 | 提供什么 | 更新 |
+|---|---|---|
+| [RIPE NCC RIS](https://ris.ripe.net/)（riswhoisdump） | 每个 AS 宣告的前缀；至少 10 个 RIS 对等点看得到才算 | 构建时 |
+| [iptoasn.com](https://iptoasn.com/)（PDDL 公有领域） | 地址到 AS 的对应 | 构建时 |
+| RIPE NCC [asn.txt](https://ftp.ripe.net/ripe/asnames/asn.txt) | 每个已分配 AS 号的名称和国家 | 构建时 |
+| 五大 RIR 的 delegated-extended 文件 | 分配机构、分配日期，以及同一持有者的 AS 号 | 构建时 |
+| RDAP（经 rdap.arin.net 跳转到对应 RIR） | 注册组织、滥用投诉邮箱、更新日期 | 打开页面时，缓存一天 |
+| [RIPEstat](https://stat.ripe.net/) asn-neighbours | 上游、下游、对等 | 打开页面时，缓存一天 |
+| Cloudflare / Google DNS over HTTPS | 反向解析、域名解析 | 实时 |
+
+`npm run data` 下载上面的文件，在 `public/data/` 生成分片（不提交到仓库）：
+
+```
+data/as/<n>.json      AS 号 n*100 … n*100+99 的记录：名称、国家、RIR、日期、同机构 ASN、前 100 个前缀
+data/px/<asn>.json    前缀超过 100 个的 AS 的完整列表
+data/names/<n>.json   AS 号 n*1000 … n*1000+999 的名称（邻居列表用）
+data/ip4/<a>.bin      以 a 开头的 IPv4 地址段：Uint32 三元组（起、止、AS）
+data/ip6/<h>.bin      以 h 开头的 IPv6 地址段：前 64 位（起、止）和 AS
+```
+
+Worker 查询时只读这些静态文件，每次请求只解析一两个小分片。
+
+## API
+
+```
+GET /api/me               本机地址
+GET /api/ip/<地址>        宣告它的 AS、前缀、地址范围
+GET /api/as/<AS 号>       AS 的记录和全部前缀
+GET /api/rdap/as/<AS 号>  注册信息（RDAP）
+GET /api/rdap/ip/<地址>   注册信息和反向解析
+GET /api/nb/<AS 号>       上游、下游、对等（各前 8 个）和数量
+```
+
+都返回 JSON，允许跨域。
+
+## 自己部署
+
+```bash
+git clone https://github.com/yt1988/asn-lookup
+cd asn-lookup
+npm install
+npm run data        # 下载并生成查询数据（约 20 秒，约 100 MB）
+npx wrangler login
+npx wrangler deploy
+```
+
+只有一个 Worker：页面和数据是静态资源（免费、不计请求数），`src/worker.js` 渲染 AS 和 IP 页面、回答 `/api/*`。`wrangler.toml` 关闭了 `*.workers.dev` 和预览地址；在 **Workers & Pages → asn-lookup → Settings → Domains & Routes** 绑定自己的域名，或临时设置 `workers_dev = true` 试用。
+
+要让 canonical、hreflang 和站点地图用你自己的域名：
+
+```bash
+SITE_URL=https://asn.example.com npm run data
+SITE_URL=https://asn.example.com npm run build
+```
+
+并在 `wrangler.toml` 的 `[vars]` 里设置同样的 `SITE_URL`。
+
+**数据每天更新**：`.github/workflows/refresh.yml` 每天提交一次 `data.stamp`，推送会触发 Cloudflare Workers Builds 重新构建（构建命令 `npm ci && npm run data && npm test`）。不用 Workers Builds 的话，定时运行 `npm run data && npx wrangler deploy` 即可。
+
+## 开发
+
+```bash
+npm run data     # 一次即可，之后一天内复用 .cache/ 里的下载
+npm run build    # 生成 public/ 里的页面、模板和资源
+npm run dev      # http://localhost:8798
+npm test         # public/ 是否最新 + 单元测试
+npm run og       # 重新生成分享预览图和图标
+```
+
+## 许可
+
+MIT。数据各自遵循来源的条款：RIPE NCC 数据见 [RIPE NCC 使用条款](https://www.ripe.net/about-us/legal/ripestat-service-terms-and-conditions/)，iptoasn.com 为 PDDL 1.0。

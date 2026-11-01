@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.env
+.dev.vars
+.claude/
+public/data/
+public/sitemaps/
+.cache/
+public/sitemap.xml
