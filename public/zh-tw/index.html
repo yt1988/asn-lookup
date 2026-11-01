@@ -41,7 +41,7 @@
 <meta name="twitter:description" content="免費的 ASN 查詢與 IP 歸屬查詢：一個 IP 屬於哪家電信業者、哪個自治系統；每個 AS 號碼的所屬機構、國家/地區、註冊機構、IPv4 與 IPv6 網段、上游及同一機構的其他 ASN。">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"ASN 查詢 · 1ms.dog","url":"https://asn.1ms.dog/zh-tw/","image":"https://asn.1ms.dog/og/zh-tw.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"免費的 ASN 查詢與 IP 歸屬查詢：一個 IP 屬於哪家電信業者、哪個自治系統；每個 AS 號碼的所屬機構、國家/地區、註冊機構、IPv4 與 IPv6 網段、上游及同一機構的其他 ASN。","inLanguage":"zh-TW","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASN 是什麼？","acceptedAnswer":{"@type":"Answer","text":"ASN（自治系統號碼）是網際網路上一個獨立運作路由的網路的編號，例如一家電信業者、一家雲端業者、一所大學或一家大公司。每個 AS 透過 BGP 向鄰居宣告自己負責的 IP 網段，其他網路因此知道該把流量送到哪裡。 AS 號碼由五大區域網際網路註冊機構（APNIC、RIPE NCC、ARIN、LACNIC、AFRINIC）分配。例如 AS3462 是中華電信 HiNet，AS13335 是 Cloudflare。"}},{"@type":"Question","name":"怎麼查一個 IP 屬於哪家？","acceptedAnswer":{"@type":"Answer","text":"在輸入框填入 IP 位址。頁面會顯示由哪個 AS 宣告、所在前綴，註冊機構登記的資訊（網路名稱、組織、國家/地區、濫用檢舉信箱）和反向解析。 負責路由的 AS 和登記的組織常常不是同一家：雲端業者、機房可以替客戶宣告客戶自己的網段。"}},{"@type":"Question","name":"資料從哪來？多久更新？","acceptedAnswer":{"@type":"Answer","text":"前綴來自 RIPE NCC 的路由資訊服務（RIS），它從數百個網路收集路由表，至少 10 個網路看得到的前綴才算數。IP 對應的 AS 使用 iptoasn.com（公有領域）。名稱、國家/地區和分配日期來自五大註冊機構公開的檔案。這些資料每天更新。 註冊資訊、反向解析和鄰居是在開啟頁面時即時查詢的（RDAP、DNS、RIPEstat）。"}},{"@type":"Question","name":"上游、下游是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"上游是這個 AS 購買轉接的網路，或位於它和大部分網際網路之間的網路；下游是透過它連上網際網路的網路。這是根據 RIPE 收集器看到的路徑推斷的，只在部分路徑上出現的對等網路另外列出。 列表依經過每個鄰居的路徑數排序，最重要的連線排在前面。"}},{"@type":"Question","name":"CN2、9929、CMI 是什麼？","acceptedAnswer":{"@type":"Answer","text":"它們是中國大陸三大電信業者的精品國際網路，買 VPS 時常看到：AS4809 是中國電信 CN2（一般骨幹網是 AS4134，俗稱 163），AS9929 是中國聯通精品網（一般的是 AS4837，俗稱 169），AS58453 是中國移動國際 CMI（境內網路是 AS9808）。 伺服器的流量走哪一條，取決於回到你這邊的路由；用 traceroute 可以看到沿途經過的 AS 號碼。"}},{"@type":"Question","name":"可以複製網段清單嗎？","acceptedAnswer":{"@type":"Answer","text":"可以。「全部複製」會把這個 AS 的全部 IPv4 或 IPv6 前綴複製出來，一行一個，可以直接用在防火牆或代理分流規則中。任何 AS 都可以用 /api/as/\u003cAS 號碼> 取得 JSON 格式的完整資料。"}}]}]}</script>
 <link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.9192b8db36.css">
+<link rel="stylesheet" href="/assets/app.efed0b54ab.css">
 </head>
 <body>
 <div class="app">
@@ -77,7 +77,7 @@
   <div class="me" id="me">
     <div class="sec-h"><span>你的 IP</span><a class="eg" id="meMore" href="/zh-tw/">詳情 →</a></div>
     <ul class="kv"><li id="meIp"><span>IP</span><b><i class="skl"></i></b></li><li id="meAs"><span>ASN</span><b><i class="skl"></i></b></li><li id="mePfx"><span>所在前綴</span><b><i class="skl"></i></b></li><li id="meLoc"><span>位置</span><b><i class="skl"></i></b></li></ul>
-    <p class="links" id="meLinks"><a id="lnIpqs" hidden target="_blank" rel="noopener">這個 IP 乾不乾淨 →</a><a id="lnEgress" hidden target="_blank" rel="noopener">每個網站看到的 IP →</a>&nbsp;</p>
+    <p class="links" id="meLinks"><a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener">這個 IP 乾不乾淨<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg></a><a class="xt" id="lnEgress" hidden target="_blank" rel="noopener">每個網站看到的 IP<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg></a>&nbsp;</p>
   </div>
 </section>
 <section class="card pop">
@@ -103,7 +103,7 @@
   </div>
 </div>
 <script type="application/json" id="data">{"lang":"zh-TW","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
-<script src="/assets/l.zh-tw.ad11f599cd.js"></script>
+<script src="/assets/l.zh-tw.bf1910448a.js"></script>
 <script src="/assets/app.7c0b4ad01a.js"></script>
 </body>
 </html>

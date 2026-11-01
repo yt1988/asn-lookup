@@ -41,7 +41,7 @@
 <meta name="twitter:description" content="無料の ASN 検索と IP アドレス検索。IP アドレスがどのネットワーク（AS）のものか、各 AS 番号の組織、国、登録機関、IPv4・IPv6 プレフィックス、上流、同じ組織の他の ASN がわかります。">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"ASN 検索 · 1ms.dog","url":"https://asn.1ms.dog/ja/","image":"https://asn.1ms.dog/og/ja.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"無料の ASN 検索と IP アドレス検索。IP アドレスがどのネットワーク（AS）のものか、各 AS 番号の組織、国、登録機関、IPv4・IPv6 プレフィックス、上流、同じ組織の他の ASN がわかります。","inLanguage":"ja","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASN とは？","acceptedAnswer":{"@type":"Answer","text":"ASN（自律システム番号）は、インターネット上で独自に経路制御を行うネットワークの番号です。通信事業者、クラウド、大学、大企業などが持っています。各 AS は担当する IP プレフィックスを BGP で隣接ネットワークに広告し、それによって他のネットワークは通信をどこへ送ればよいかを知ります。 番号は 5 つの地域インターネットレジストリ（APNIC、RIPE NCC、ARIN、LACNIC、AFRINIC）が割り当てます。例えば AS2516 は KDDI、AS13335 は Cloudflare です。"}},{"@type":"Question","name":"IP アドレスの持ち主を調べるには？","acceptedAnswer":{"@type":"Answer","text":"入力欄にアドレスを入れてください。そのアドレスを広告している AS とプレフィックス、登録機関の記録（ネットワーク名、組織、国、不正利用の連絡先）、逆引きが表示されます。 経路を広告している AS と登録上の組織は、しばしば別です。クラウドやホスティング会社が顧客自身のアドレスブロックを広告することがあります。"}},{"@type":"Question","name":"データの出どころと更新頻度は？","acceptedAnswer":{"@type":"Answer","text":"プレフィックスは RIPE NCC の Routing Information Service（RIS）から取得しています。数百のネットワークから経路表を集めており、10 以上のネットワークから見えるプレフィックスだけを載せています。アドレスから AS への対応は iptoasn.com（パブリックドメイン）、名前・国・割り当て日は 5 つのレジストリの公開ファイルです。どれも毎日更新します。 登録情報、逆引き、隣接 AS はページを開いたときにリアルタイムで問い合わせます（RDAP、DNS、RIPEstat）。"}},{"@type":"Question","name":"上流・下流とは？","acceptedAnswer":{"@type":"Answer","text":"上流は、この AS がトランジットを買っているネットワーク、またはこの AS とインターネットの大部分の間にあるネットワークです。下流は、この AS を通ってインターネットにつながるネットワークです。RIPE のコレクターが見た経路から推定しているため、一部の経路にしか現れないピアは別にまとめています。 経由する経路の数が多い順なので、重要な接続ほど上に来ます。"}},{"@type":"Question","name":"CN2、9929、CMI とは？","acceptedAnswer":{"@type":"Answer","text":"中国の 3 大通信事業者の高品質な国際網で、VPS の回線としてよく宣伝されます。AS4809 は China Telecom の CN2（通常のバックボーンは AS4134、通称 163）、AS9929 は China Unicom の高品質網（通常は AS4837、通称 169）、AS58453 は China Mobile International（国内網は AS9808）です。 サーバーの通信がどれを通るかは、あなたへの戻りの経路で決まります。traceroute で途中の AS 番号を確認できます。"}},{"@type":"Question","name":"プレフィックスの一覧をコピーできますか？","acceptedAnswer":{"@type":"Answer","text":"はい。「すべてコピー」で、その AS の IPv4 または IPv6 プレフィックスを 1 行に 1 つずつコピーできます。ファイアウォールやプロキシのルールにそのまま使えます。/api/as/\u003cAS 番号> では、どの AS でも完全なデータを JSON で取得できます。"}}]}]}</script>
 <link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.9192b8db36.css">
+<link rel="stylesheet" href="/assets/app.efed0b54ab.css">
 </head>
 <body>
 <div class="app">
@@ -77,7 +77,7 @@
   <div class="me" id="me">
     <div class="sec-h"><span>あなたの IP</span><a class="eg" id="meMore" href="/ja/">詳細 →</a></div>
     <ul class="kv"><li id="meIp"><span>IP</span><b><i class="skl"></i></b></li><li id="meAs"><span>ASN</span><b><i class="skl"></i></b></li><li id="mePfx"><span>プレフィックス</span><b><i class="skl"></i></b></li><li id="meLoc"><span>場所</span><b><i class="skl"></i></b></li></ul>
-    <p class="links" id="meLinks"><a id="lnIpqs" hidden target="_blank" rel="noopener">この IP はクリーン？ →</a><a id="lnEgress" hidden target="_blank" rel="noopener">各サイトから見える IP →</a>&nbsp;</p>
+    <p class="links" id="meLinks"><a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener">この IP はクリーン？<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg></a><a class="xt" id="lnEgress" hidden target="_blank" rel="noopener">各サイトから見える IP<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg></a>&nbsp;</p>
   </div>
 </section>
 <section class="card pop">
@@ -103,7 +103,7 @@
   </div>
 </div>
 <script type="application/json" id="data">{"lang":"ja","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
-<script src="/assets/l.ja.55cb72ab93.js"></script>
+<script src="/assets/l.ja.02fd537c10.js"></script>
 <script src="/assets/app.7c0b4ad01a.js"></script>
 </body>
 </html>

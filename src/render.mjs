@@ -30,6 +30,8 @@ const SEARCH = (T, home, value = "") => `<form class="ask" action="${home}q" met
 </form>`;
 const kv = rows => `<ul class="kv">${rows.map(([k, v, attr = ""]) => `<li${attr}><span>${esc(k)}</span><b>${v}</b></li>`).join("")}</ul>`;
 const SKL = '<i class="skl"></i>';
+// after a link to another 1ms.dog tool (the site uses this icon for those, not an arrow)
+const EXT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
 const LISTED = 48;     // prefixes per family on the page; "show all" brings the rest
 const asLink = (home, asn, name, cc) => `<a class="asl" href="${home}AS${asn}"><b>AS${asn}</b>${name ? ` <span>${esc(name)}</span>` : ""}${cc ? " " + flag(cc) : ""}</a>`;
 
@@ -81,7 +83,7 @@ export function homeMain(T, lang) {
   <div class="me" id="me">
     <div class="sec-h"><span>${esc(T("me_h"))}</span><a class="eg" id="meMore" href="${home}">${esc(T("me_more"))}</a></div>
     ${kv([[T("k_ip"), SKL, ' id="meIp"'], [T("k_as"), SKL, ' id="meAs"'], [T("k_pfx"), SKL, ' id="mePfx"'], [T("k_loc"), SKL, ' id="meLoc"']])}
-    <p class="links" id="meLinks"><a id="lnIpqs" hidden target="_blank" rel="noopener">${esc(T("ln_ipqs"))}</a><a id="lnEgress" hidden target="_blank" rel="noopener">${esc(T("ln_egress"))}</a>&nbsp;</p>
+    <p class="links" id="meLinks"><a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener">${esc(T("ln_ipqs"))}${EXT}</a><a class="xt" id="lnEgress" hidden target="_blank" rel="noopener">${esc(T("ln_egress"))}${EXT}</a>&nbsp;</p>
   </div>
 </section>
 <section class="card pop">
@@ -179,7 +181,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
   </div>
   ${hit.asn ? "" : `<p class="lead">${esc(desc)}</p>`}
   ${rows.length || live.length ? `<div class="cols">${rows.length ? kv(rows) : ""}<div>${kv(live)}</div></div>` : ""}
-  <p class="links">${hit.private ? "" : `<a id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}</a>`}${ip.includes(":") ? `<a id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
+  <p class="links">${hit.private ? "" : `<a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}${EXT}</a>`}${ip.includes(":") ? `<a class="xt" id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}${EXT}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
 </section>`;
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + "ip/" + ip, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];
   return { status: 200, rest: "ip/" + ip, title, desc, main, graph, robots: "noindex, follow",

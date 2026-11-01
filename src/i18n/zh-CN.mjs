@@ -20,9 +20,9 @@ export default {
 
   me_h: "你的 IP",
   me_more: "详情 →",
-  ln_ipqs: "这个 IP 干不干净 →",
-  ln_egress: "每个网站看到的 IP →",
-  ln_ipv6: "你的网络支持 IPv6 吗 →",
+  ln_ipqs: "这个 IP 干不干净",
+  ln_egress: "每个网站看到的 IP",
+  ln_ipv6: "你的网络支持 IPv6 吗",
   pop_h: "常见网络",
   g_cn: "中国大陆运营商",
   g_cloud: "云和 CDN",

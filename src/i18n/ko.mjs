@@ -20,9 +20,9 @@ export default {
 
   me_h: "내 IP",
   me_more: "자세히 →",
-  ln_ipqs: "이 IP는 깨끗할까? →",
-  ln_egress: "사이트별로 보이는 IP →",
-  ln_ipv6: "내 네트워크는 IPv6를 지원할까? →",
+  ln_ipqs: "이 IP는 깨끗할까?",
+  ln_egress: "사이트별로 보이는 IP",
+  ln_ipv6: "내 네트워크는 IPv6를 지원할까?",
   pop_h: "주요 네트워크",
   g_cn: "중국 본토 통신사",
   g_cloud: "클라우드와 CDN",

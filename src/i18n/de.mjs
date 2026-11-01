@@ -20,9 +20,9 @@ export default {
 
   me_h: "Ihre IP",
   me_more: "Details →",
-  ln_ipqs: "Ist diese IP sauber? →",
-  ln_egress: "Welche IP jede Website sieht →",
-  ln_ipv6: "Ist Ihr Netz IPv6-fähig? →",
+  ln_ipqs: "Ist diese IP sauber?",
+  ln_egress: "Welche IP jede Website sieht",
+  ln_ipv6: "Ist Ihr Netz IPv6-fähig?",
   pop_h: "Bekannte Netze",
   g_cn: "Netzbetreiber in Festlandchina",
   g_cloud: "Clouds und CDNs",
