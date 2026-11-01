@@ -22,6 +22,7 @@ export default {
   me_more: "詳細 →",
   ln_ipqs: "この IP はクリーン？ →",
   ln_egress: "各サイトから見える IP →",
+  ln_ipv6: "あなたのネットワークは IPv6 対応？ →",
   pop_h: "主なネットワーク",
   g_cn: "中国本土の通信事業者",
   g_cloud: "クラウドと CDN",

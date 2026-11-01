@@ -179,7 +179,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
   </div>
   ${hit.asn ? "" : `<p class="lead">${esc(desc)}</p>`}
   ${rows.length || live.length ? `<div class="cols">${rows.length ? kv(rows) : ""}<div>${kv(live)}</div></div>` : ""}
-  <p class="links">${hit.private ? "" : `<a id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}</a>`}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
+  <p class="links">${hit.private ? "" : `<a id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}</a>`}${ip.includes(":") ? `<a id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
 </section>`;
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + "ip/" + ip, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];
   return { status: 200, rest: "ip/" + ip, title, desc, main, graph, robots: "noindex, follow",

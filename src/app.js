@@ -131,6 +131,9 @@ import { knownName } from "./popular.mjs";
   if (D.page === "ip") {
     const ip = D.ip.split("/")[0], ipqs = meta("ipqs"), ln = $("#lnIpqs");
     if (ln && ipqs) Object.assign(ln, { href: `${ipqs}${HOME}?ip=${encodeURIComponent(ip)}`, hidden: false });
+    // an IPv6 address: is the visitor's own network IPv6-ready (IPv6 Test)
+    const v6 = meta("ipv6");
+    if ($("#lnIpv6") && v6) Object.assign($("#lnIpv6"), { href: v6 + HOME, hidden: false });
     if (D.live) getJ(`/api/rdap/ip/${encodeURIComponent(ip)}`).then(r => fillRows({
       net: r.name ? esc(r.name) + (r.range ? `<span class="m mono"> · ${esc(r.range)}</span>` : "") : "",
       org: r.org ? esc(r.org) + (r.cc ? " " + flag(r.cc) : "") : "", ptr: r.ptr ? `<span class="mono">${esc(r.ptr)}</span>` : "", abuse: mail(r.abuse),

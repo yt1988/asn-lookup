@@ -22,6 +22,7 @@ export default {
   me_more: "Detalhes →",
   ln_ipqs: "Este IP está limpo? →",
   ln_egress: "Qual IP cada site vê →",
+  ln_ipv6: "Sua rede está pronta para IPv6? →",
   pop_h: "Redes comuns",
   g_cn: "Operadoras da China continental",
   g_cloud: "Nuvens e CDNs",

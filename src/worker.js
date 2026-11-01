@@ -237,7 +237,8 @@ export default {
 
     if (p === "/q") return redirect(await search(url.searchParams.get("s"), home), 302);
 
-    if ((m = /^\/as\/?(\d{1,10})\/?$/i.exec(p))) {
+    // /AS4134 is the page; /as4134, /as/4134, /asn/4134, /4134, a trailing slash or leading zeros redirect to it
+    if ((m = /^\/(?:asn?\/?)?(\d{1,10})\/?$/i.exec(p))) {
       const asn = +m[1];
       if (p !== "/AS" + m[1] || String(asn) !== m[1]) return redirect(home + "AS" + asn);
       if (asn >= 2 ** 32) return notFound();

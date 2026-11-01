@@ -22,6 +22,7 @@ export default {
   me_more: "詳情 →",
   ln_ipqs: "這個 IP 乾不乾淨 →",
   ln_egress: "每個網站看到的 IP →",
+  ln_ipv6: "你的網路支援 IPv6 嗎 →",
   pop_h: "常見網路",
   g_cn: "中國大陸電信業者",
   g_cloud: "雲端與 CDN",
