@@ -74,7 +74,6 @@ export default {
   h_ext: "在其他網站查看",
   na: "暫時查不到",
   share: "分享",
-  share_copied: "連結已複製",
 
   ip_title: "{ip} 歸屬：{as} {name} - IP 查詢",
   ip_title_none: "{ip} - IP 歸屬查詢",

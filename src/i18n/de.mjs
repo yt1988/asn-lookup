@@ -74,7 +74,6 @@ export default {
   h_ext: "Mehr bei",
   na: "Nicht verfügbar",
   share: "Teilen",
-  share_copied: "Link kopiert",
 
   ip_title: "{ip} – Inhaber {as} {name} | IP-Abfrage",
   ip_title_none: "{ip} – IP-Abfrage",

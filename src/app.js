@@ -61,21 +61,48 @@ import { knownName } from "./popular.mjs";
     history.replaceState(null, "", location.pathname);
   }
 
-  /* ---------- toast and share ---------- */
+  /* ---------- toast ---------- */
   let toastEl, toastT;
   function toast(s) {
     if (!toastEl) toastEl = document.body.appendChild(Object.assign(document.createElement("div"), { className: "toast", role: "status" }));
     toastEl.textContent = s; toastEl.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove("on"), 1600);
   }
   const copy = s => navigator.clipboard.writeText(s);
-  const share = $("#shareBtn");
-  if (share) {
-    share.hidden = false;
-    share.onclick = async () => {
+
+  /* ---------- share: the 1ms.dog share dialog (1ms-shell assets/share/, copied verbatim to /assets/share/) ---------- */
+  // The page is the result: its own address shows the same AS or address again. The card (D.card, from the server):
+  // the AS or address, its name, then a grid of facts { k, v, cc (a flag), mono, wide (the full width) }.
+  const shareBtn = $("#shareBtn");
+  if (shareBtn && D.card) {
+    shareBtn.hidden = false;
+    shareBtn.onclick = async () => {
+      const { share } = await import("/assets/share/share.js");
       const url = location.origin + location.pathname;
-      if (navigator.share) { try { await navigator.share({ title: document.title, url }); } catch (e) {} return; }
-      copy(url).then(() => toast(t("share_copied")), () => {});
+      share({
+        lang: LANG, name: t("app_name"), file: D.card.big.replace(/[^\w.-]+/g, "_"),
+        link: () => url, home: location.origin + HOME, text: () => document.title,
+        height: 630, draw: (x, kit) => drawCard(x, kit, D.card),
+        ts: Date.parse(D.card.ts) || Date.now(),
+      }).open();
     };
+  }
+  async function drawCard(x, kit, c) {
+    const { W, P, F, M, v, clip, img } = kit, w = W - P * 2;
+    x.textBaseline = "alphabetic"; x.textAlign = "left";
+    x.fillStyle = v("ink"); x.font = `700 72px ${M}`; x.fillText(clip(x, c.big, w), P, kit.top + 78);
+    x.fillStyle = v("fg"); x.font = `650 38px ${F}`; x.fillText(clip(x, c.name, w), P, kit.top + 134);
+    if (c.sub) { x.fillStyle = v("muted"); x.font = `500 24px ${M}`; x.fillText(clip(x, c.sub, w), P, kit.top + 172); }
+    // the facts, two to a row; a wide one takes the whole row
+    let col = 0, y = kit.top + 222;
+    for (const r of c.rows) {
+      if (r.wide && col) { col = 0; y += 96; }
+      const cw = r.wide ? w : w / 2 - 20, ax = P + col * (w / 2 + 20);
+      x.fillStyle = v("muted"); x.font = `600 22px ${F}`; x.fillText(clip(x, r.k, cw), ax, y);
+      let vx = ax;
+      if (r.cc && /^[A-Z]{2}$/.test(r.cc)) { try { x.drawImage(await img(`/flags/${r.cc.toLowerCase()}.svg`), ax, y + 16, 40, 30); vx += 52; } catch (e) {} }
+      x.fillStyle = v("fg"); x.font = `600 30px ${r.mono ? M : F}`; x.fillText(clip(x, r.v, cw - (vx - ax)), vx, y + 42);
+      if (r.wide || col) { col = 0; y += 96; } else col = 1;
+    }
   }
 
   // fill the live rows of a key–value list: data-r="<field>" → value

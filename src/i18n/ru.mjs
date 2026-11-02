@@ -74,7 +74,6 @@ export default {
   h_ext: "Ещё на",
   na: "Недоступно",
   share: "Поделиться",
-  share_copied: "Ссылка скопирована",
 
   ip_title: "{ip} – владелец {as} {name} | Поиск IP",
   ip_title_none: "{ip} – поиск IP",

@@ -152,8 +152,13 @@ ${sib}
 <p class="ext"><span class="m">${esc(T("h_ext"))}</span>${ext.map(([n, u]) => `<a href="${u}" target="_blank" rel="noopener nofollow">${n}</a>`).join("")}</p>`;
 
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + as, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];
+  // the share card (src/app.js): the AS, its name, then country, registry and what it announces
+  const card = { big: as, name, sub: known && rec.h && known !== rec.h ? rec.h : "", ts: meta && meta.at, rows: [
+    { k: T("k_cc"), v: cc || "–", cc: rec.cc }, { k: T("k_rir"), v: rec.r || "–" },
+    { k: T("k_v4"), v: n4 ? fill(T("v_pfx4"), { n: F.num(n4), c: F.big(rec.c4 || 0) }) : T("v_none") },
+    { k: T("k_v6"), v: n6 ? fill(T("v_pfx6"), { n: F.num(n6), c: F.big(rec.c6 || 0) }) : T("v_none") }] };
   return { status: 200, rest: as, title, desc, main, graph, robots: routed ? undefined : "noindex, follow",
-    foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { asn, x: !!rec.x } };
+    foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { asn, x: !!rec.x, card } };
 }
 
 /* ---------- an address ---------- */
@@ -184,6 +189,10 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
   <p class="links">${hit.private ? "" : `<a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}${EXT}</a>`}${ip.includes(":") ? `<a class="xt" id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}${EXT}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
 </section>`;
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + "ip/" + ip, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];
+  // the share card: the address, the AS announcing it, then the prefix, range and country
+  const card = { big: ip, name: hit.asn ? `${as} · ${name}` : desc, sub: "", ts: meta && meta.at, rows: hit.asn ? [
+    { k: T("k_pfx"), v: hit.pfx || "–", mono: true }, { k: T("k_cc"), v: cc || "–", cc: hit.rec && hit.rec.cc },
+    { k: T("k_range"), v: hit.range || "–", mono: true, wide: true }] : [] };
   return { status: 200, rest: "ip/" + ip, title, desc, main, graph, robots: "noindex, follow",
-    foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { ip, live: !hit.private } };
+    foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { ip, live: !hit.private, card } };
 }

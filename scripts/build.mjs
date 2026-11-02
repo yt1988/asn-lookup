@@ -5,6 +5,7 @@
 //                                                address page ({{head}}, {{main}}, {{foot}}, {{data}}, {{rootAttr}})
 //   assets/app.<hash>.js, assets/app.<hash>.css  the page's code and styles, shared by every language
 //   assets/l.<lang>.<hash>.js                    the strings the browser code needs, per language
+//   assets/share/                                the 1ms.dog share dialog, copied verbatim from 1ms-shell; not built here
 //   robots.txt, llms.txt, _headers               crawlers, AI readers, security headers (CSP)
 // The lookup data (public/data/, the sitemaps) comes from scripts/data.mjs; the link-preview images and icons from
 // scripts/og.mjs. The Worker (src/worker.js) is deployed from source by wrangler.
@@ -38,7 +39,7 @@ export async function build({ check = false } = {}) {
 
   const root = fileURLToPath(new URL("..", import.meta.url));
   const js = (await bundle({ entryPoints: [fileURLToPath(new URL("app.js", src))], bundle: true, minify: true, format: "iife", target: "es2020",
-    legalComments: "none", write: false, absWorkingDir: root })).outputFiles[0].text;
+    legalComments: "none", write: false, absWorkingDir: root, external: ["/assets/share/*"] })).outputFiles[0].text;
   const cssFull = (await Promise.all(["fonts.css", "base.css", "style.css"].map(f => readFile(new URL(f, src), "utf8")))).join("\n");
   const css = (await transform(cssFull, { loader: "css", minify: true, legalComments: "none" })).code;
   const jsName = `app.${hash(js)}.js`, cssName = `app.${hash(css)}.css`;

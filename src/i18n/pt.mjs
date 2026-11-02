@@ -74,7 +74,6 @@ export default {
   h_ext: "Mais em",
   na: "Indisponível",
   share: "Compartilhar",
-  share_copied: "Link copiado",
 
   ip_title: "{ip} – titular {as} {name} | Consulta IP",
   ip_title_none: "{ip} – Consulta IP",

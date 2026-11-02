@@ -74,7 +74,6 @@ export default {
   h_ext: "他のサイトで見る",
   na: "取得できません",
   share: "共有",
-  share_copied: "リンクをコピーしました",
 
   ip_title: "{ip} の持ち主：{as} {name} - IP 検索",
   ip_title_none: "{ip} - IP 検索",

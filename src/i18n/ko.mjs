@@ -74,7 +74,6 @@ export default {
   h_ext: "다른 사이트에서 보기",
   na: "조회할 수 없음",
   share: "공유",
-  share_copied: "링크 복사됨",
 
   ip_title: "{ip} 소유자: {as} {name} - IP 조회",
   ip_title_none: "{ip} - IP 조회",

@@ -74,7 +74,6 @@ export default {
   h_ext: "More on",
   na: "Unavailable",
   share: "Share",
-  share_copied: "Link copied",
 
   ip_title: "{ip} – owner {as} {name} | IP lookup",
   ip_title_none: "{ip} – IP lookup",
