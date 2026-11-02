@@ -74,7 +74,7 @@ export async function build({ check = false } = {}) {
     files[(slug ? slug + "/" : "") + "index.html"] = html;
   }
 
-  files["robots.txt"] = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /q\nDisallow: /tpl/\nDisallow: /data/\n\nSitemap: ${SITE}/sitemap.xml\n`;
+  files["robots.txt"] = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /q\nDisallow: /tpl/\nDisallow: /data/\nDisallow: /ip/\nDisallow: /*/ip/\n\nSitemap: ${SITE}/sitemap.xml\n`;
   files["llms.txt"] = `# ASN Lookup · 1ms.dog
 
 > Free IP and ASN lookup. For any IP address: the autonomous system announcing it, the announced prefix holding it,

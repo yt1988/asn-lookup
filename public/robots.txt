@@ -4,5 +4,7 @@ Disallow: /api/
 Disallow: /q
 Disallow: /tpl/
 Disallow: /data/
+Disallow: /ip/
+Disallow: /*/ip/
 
 Sitemap: https://asn.1ms.dog/sitemap.xml
