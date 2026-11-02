@@ -83,18 +83,32 @@ import { knownName } from "./popular.mjs";
   const mail = e => e ? `<a href="mailto:${esc(e)}">${esc(e)}</a>` : "";
 
   /* ---------- home: the visitor's own address ---------- */
+  // Who the visitor is (address, AS, organization, location) comes from the 1ms.dog shell's /_ms/me, Cloudflare's view
+  // of this connection; the prefix comes from our BGP data. Self-hosted without the shell, /_ms/me is a 404 and
+  // /api/me answers all of it. me: { ip, asn, org, country, city }; hit: a lookup of me.ip (null while it loads).
   if (D.page === "home") {
-    getJ("/api/me").then(r => {
-      $("#meIp b").innerHTML = `<a class="mono" href="${HOME}ip/${esc(r.ip)}">${esc(r.ip)}</a>`;
-      $("#meAs b").innerHTML = r.asn ? asLink(r.asn, knownName(r.asn, LANG) || r.name, r.cc) : r.cf && r.cf.asn ? asLink(r.cf.asn, r.cf.org) : NA;
-      $("#mePfx b").innerHTML = r.prefix ? `<a class="mono" href="${HOME}ip/${esc(r.prefix)}">${esc(r.prefix)}</a>` : NA;
-      const loc = r.cf && r.cf.country ? [r.cf.city, country(r.cf.country)].filter(Boolean).join(", ") : "";
-      $("#meLoc b").innerHTML = loc ? `${flag(r.cf.country)} ${esc(loc)}` : NA;
-      $("#meMore").href = `${HOME}ip/${encodeURIComponent(r.ip)}`;
+    const row = (s, v) => { $(s + " b").innerHTML = v || NA; };
+    const show = (me, hit) => {
+      const asn = me.asn || (hit && hit.asn), same = hit && hit.asn === asn;
+      row("#meIp", `<a class="mono" href="${HOME}ip/${esc(me.ip)}">${esc(me.ip)}</a>`);
+      row("#meAs", asn && asLink(asn, knownName(asn, LANG) || me.org || (same && hit.name), same && hit.cc));
+      if (hit) row("#mePfx", hit.prefix && `<a class="mono" href="${HOME}ip/${esc(hit.prefix)}">${esc(hit.prefix)}</a>`);
+      const loc = me.country ? [me.city, country(me.country)].filter(Boolean).join(", ") : "";
+      row("#meLoc", loc && `${flag(me.country)} ${esc(loc)}`);
+      $("#meMore").href = `${HOME}ip/${encodeURIComponent(me.ip)}`;
       const ipqs = meta("ipqs"), egress = meta("egress");
-      if (ipqs) Object.assign($("#lnIpqs"), { href: `${ipqs}${HOME}?ip=${encodeURIComponent(r.ip)}`, hidden: false });
+      if (ipqs) Object.assign($("#lnIpqs"), { href: `${ipqs}${HOME}?ip=${encodeURIComponent(me.ip)}`, hidden: false });
       if (egress) Object.assign($("#lnEgress"), { href: egress + HOME, hidden: false });
-    }).catch(() => { ["#meIp", "#meAs", "#mePfx", "#meLoc"].forEach(s => { $(s + " b").innerHTML = NA; }); });
+    };
+    const fallback = () => getJ("/api/me").then(r => {
+      const cf = r.cf || {};
+      show({ ip: r.ip, asn: r.asn || cf.asn, org: r.asn ? r.name : cf.org, country: cf.country, city: cf.city }, r);
+    });
+    getJ("/_ms/me", 4000).then(me => {
+      if (!me || !me.ip) return fallback();
+      show(me, null);
+      return getJ(`/api/ip/${encodeURIComponent(me.ip)}`).then(hit => show(me, hit), () => show(me, {}));
+    }, fallback).catch(() => { ["#meIp", "#meAs", "#mePfx", "#meLoc"].forEach(s => row(s)); });
   }
 
   /* ---------- an AS ---------- */
