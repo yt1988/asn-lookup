@@ -109,6 +109,9 @@ ${Object.entries(HEADERS).map(([k, v]) => `  ${k}: ${v}`).join("\n")}
 /assets/fonts/*
   ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
+/assets/share/*
+  ! Cache-Control
+  Cache-Control: public, max-age=0, must-revalidate
 /og/*
   Cache-Control: public, max-age=86400
 /flags/*
