@@ -141,7 +141,7 @@ export function asPage({ T, lang, site, asn, rec, meta }) {
   ${SEARCH(T, home)}
   <div class="top-l">
     <div class="ttl"><h1><span class="asn">${as}</span> <span>${esc(name)}</span></h1>${known && rec.h && known !== rec.h ? `<p class="sub">${esc(rec.h)}</p>` : ""}</div>
-    <button class="btn sm" id="shareBtn" type="button" hidden>${esc(T("share"))}</button>
+    <button class="btn sm pri" id="shareBtn" type="button" hidden>${esc(T("share"))}</button>
   </div>
   <p class="lead">${lead.trim()}</p>
   <div class="cols">${kv(rows)}<div>${kv(live)}</div></div>
@@ -182,7 +182,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
   ${SEARCH(T, home)}
   <div class="top-l">
     <div class="ttl"><h1><span class="asn mono">${esc(ip)}</span></h1><p class="sub">${host ? esc(fill(T("ip_host"), { host, ip })) : hit.asn ? `${esc(as)} · ${esc(name)}` : "&nbsp;"}</p></div>
-    <button class="btn sm" id="shareBtn" type="button" hidden>${esc(T("share"))}</button>
+    <button class="btn sm pri" id="shareBtn" type="button" hidden>${esc(T("share"))}</button>
   </div>
   ${hit.asn ? "" : `<p class="lead">${esc(desc)}</p>`}
   ${rows.length || live.length ? `<div class="cols">${rows.length ? kv(rows) : ""}<div>${kv(live)}</div></div>` : ""}

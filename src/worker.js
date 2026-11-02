@@ -174,7 +174,7 @@ async function render(request, env, o, lang, site, r, page) {
   const tpl = await asset(env, o, `/tpl/${lang === "en" ? "en" : SLUG[lang]}.html`, "text");
   if (!tpl) return new Response("Not built", { status: 503 });
   const meta = await asset(env, o, "/data/meta.json");
-  const etag = `W/"${djb2([tpl.etag, meta && meta.at, lang, r.rest, r.status, r.hostKey || ""].join("|"))}"`;
+  const etag = `W/"${djb2([tpl.etag, meta && meta.at, lang, r.rest, r.status, r.hostKey || "", r.data && r.data.shared || ""].join("|"))}"`;
   const headers = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=0, must-revalidate", ETag: etag,
     "Content-Security-Policy": csp(await prepaintSha()), ...HEADERS };
   if (r.status === 200 && (request.headers.get("if-none-match") || "").split(",").map(s => s.trim()).includes(etag)) return new Response(null, { status: 304, headers });
@@ -237,22 +237,32 @@ export default {
 
     if (p === "/q") return redirect(await search(url.searchParams.get("s"), home), 302);
 
+    // A shared result: /r/1~<when shared, ms in base 36>~<the page: AS4134 or ip/…>. It is that page, today's data,
+    // not indexed, with the share dialog's banner saying when it was shared. Anything unreadable is a 404.
+    let shared = 0;
+    if ((m = /^\/r\/(.*)$/.exec(p))) {
+      const s = /^1~([0-9a-z]{1,9})~(AS\d{1,10}|ip\/.+)$/.exec(m[1]);
+      if (!s) return notFound();
+      shared = parseInt(s[1], 36); p = "/" + s[2];
+    }
+    const share = r => { if (shared && r.status === 200) { r.robots = "noindex, follow"; r.data = { ...r.data, shared }; } return r; };
+
     // /AS4134 is the page; /as4134, /as/4134, /asn/4134, /4134, a trailing slash or leading zeros redirect to it
     if ((m = /^\/(?:asn?\/?)?(\d{1,10})\/?$/i.exec(p))) {
       const asn = +m[1];
-      if (p !== "/AS" + m[1] || String(asn) !== m[1]) return redirect(home + "AS" + asn);
+      if (p !== "/AS" + m[1] || String(asn) !== m[1]) return shared ? notFound() : redirect(home + "AS" + asn);
       if (asn >= 2 ** 32) return notFound();
       const meta = await asset(env, o, "/data/meta.json");
       if (!meta) return new Response("Data not built: run npm run data", { status: 503 });
       const rec = await asRec(env, o, asn);
-      return render(request, env, o, lang, site, asPage({ T, lang, site, asn, rec, meta }), "as");
+      return render(request, env, o, lang, site, share(asPage({ T, lang, site, asn, rec, meta })), "as");
     }
 
     if ((m = /^\/ip\/(.+?)\/?$/.exec(p)) || (family(p.slice(1)) && (m = [null, p.slice(1)]))) {
       const c = parseCidr(m[1]);
       if (!c) return notFound();
       const whole = c.len === (c.f === 4 ? 32 : 128), want = whole ? canon(m[1].split("/")[0]) : c.ip + "/" + c.len;
-      if (p !== "/ip/" + want) return redirect(home + "ip/" + want + url.search);
+      if (p !== "/ip/" + want) return shared ? notFound() : redirect(home + "ip/" + want + url.search);
       const meta = await asset(env, o, "/data/meta.json");
       if (!meta) return new Response("Data not built: run npm run data", { status: 503 });
       const hit = await lookup(env, o, c.ip);
@@ -260,7 +270,7 @@ export default {
       const host = DOMAIN.test(hq) ? hq : "";
       const r = ipPage({ T, lang, site, hit: { ...hit, ip: want }, host, meta });
       r.hostKey = host;
-      return render(request, env, o, lang, site, r, "ip");
+      return render(request, env, o, lang, site, share(r), "ip");
     }
     return notFound();
   },

@@ -70,14 +70,15 @@ import { knownName } from "./popular.mjs";
   const copy = s => navigator.clipboard.writeText(s);
 
   /* ---------- share: the 1ms.dog share dialog (1ms-shell assets/share/, copied verbatim to /assets/share/) ---------- */
-  // The page is the result: its own address shows the same AS or address again. The card (D.card, from the server):
-  // the AS or address, its name, then a grid of facts { k, v, cc (a flag), mono, wide (the full width) }.
+  // The page is the result, so the link names the page: /r/1~<when shared>~<AS4134 or ip/…> (src/worker.js), which
+  // opens it with the banner below. The card (D.card, from the server): the AS or address, its name, then a grid of
+  // facts { k, v, cc (a flag), mono, wide (the full width) }.
   const shareBtn = $("#shareBtn");
   if (shareBtn && D.card) {
     shareBtn.hidden = false;
     shareBtn.onclick = async () => {
       const { share } = await import("/assets/share/share.js");
-      const url = location.origin + location.pathname;
+      const url = location.origin + HOME + "r/1~" + Date.now().toString(36) + "~" + D.rest;
       share({
         lang: LANG, name: t("app_name"), file: D.card.big.replace(/[^\w.-]+/g, "_"),
         link: () => url, home: location.origin + HOME, text: () => document.title,
@@ -86,6 +87,17 @@ import { knownName } from "./popular.mjs";
       }).open();
     };
   }
+  // someone's shared AS or address: the banner above it, whose button looks up the visitor's own (their AS on an AS
+  // page, their address on an address page)
+  if (D.shared) import("/assets/share/share.js").then(({ received }) => received({
+    lang: LANG, ts: D.shared, at: $(".hero"),
+    test: async () => {
+      try {
+        const me = await getJ("/_ms/me", 4000).catch(() => getJ("/api/me")), asn = me.asn || (me.cf && me.cf.asn);
+        location.href = HOME + (D.page === "as" && asn ? "AS" + asn : "ip/" + me.ip);
+      } catch (e) { location.href = HOME; }
+    },
+  }), () => {});
   async function drawCard(x, kit, c) {
     const { W, P, F, M, v, clip, img } = kit, w = W - P * 2;
     x.textBaseline = "alphabetic"; x.textAlign = "left";
