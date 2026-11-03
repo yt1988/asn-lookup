@@ -2,6 +2,7 @@
 // are already drawn: the visitor's own address on the home page, the registry record and reverse DNS, the neighbours,
 // the full prefix list on demand. Strings: window.L1MS.
 import { knownName } from "./popular.mjs";
+import { regionName, flagCode } from "./region.mjs";
 
 (function () {
   "use strict";
@@ -12,8 +13,8 @@ import { knownName } from "./popular.mjs";
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   const K = { theme: "asn:theme", lang: "asn:lang" };
-  const country = cc => { try { return new Intl.DisplayNames([LANG], { type: "region" }).of(cc); } catch (e) { return cc; } };
-  const flag = cc => /^[A-Z]{2}$/.test(cc || "") ? `<img class="flag" src="/flags/${cc.toLowerCase()}.svg" alt="" width="20" height="15">` : "";
+  const country = cc => { try { return regionName(cc, LANG); } catch (e) { return cc; } };
+  const flag = cc => /^[A-Z]{2}$/.test(cc || "") ? `<img class="flag" src="/flags/${flagCode(cc)}.svg" alt="" width="20" height="15">` : "";
   const num = n => new Intl.NumberFormat(LANG).format(n);
   const meta = n => { const m = document.querySelector(`meta[name="${n}"]`); return m && /^https:\/\//.test(m.content) ? m.content.replace(/\/+$/, "") : ""; };
   const getJ = (u, ms = 9000) => fetch(u, { credentials: "omit", signal: AbortSignal.timeout(ms) }).then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)));
@@ -111,7 +112,7 @@ import { knownName } from "./popular.mjs";
       const cw = r.wide ? w : w / 2 - 20, ax = P + col * (w / 2 + 20);
       x.fillStyle = v("muted"); x.font = `600 22px ${F}`; x.fillText(clip(x, r.k, cw), ax, y);
       let vx = ax;
-      if (r.cc && /^[A-Z]{2}$/.test(r.cc)) { try { x.drawImage(await img(`/flags/${r.cc.toLowerCase()}.svg`), ax, y + 16, 40, 30); vx += 52; } catch (e) {} }
+      if (r.cc && /^[A-Z]{2}$/.test(r.cc)) { try { x.drawImage(await img(`/flags/${flagCode(r.cc)}.svg`), ax, y + 16, 40, 30); vx += 52; } catch (e) {} }
       x.fillStyle = v("fg"); x.font = `600 30px ${r.mono ? M : F}`; x.fillText(clip(x, r.v, cw - (vx - ax)), vx, y + 42);
       if (r.wide || col) { col = 0; y += 96; } else col = 1;
     }

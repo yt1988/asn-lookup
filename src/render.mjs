@@ -3,6 +3,7 @@
 // (the visitor's own address, the registry record, reverse DNS, neighbours) into rows drawn here from the start.
 import { GROUPS, knownName } from "./popular.mjs";
 import { LANGS, SLUG } from "./langs.mjs";
+import { regionName, flagCode } from "./region.mjs";
 
 export const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export const fill = (s, v) => { for (const k in v) s = s.split("{" + k + "}").join(v[k]); return s; };
@@ -10,15 +11,14 @@ export const path = slug => "/" + (slug ? slug + "/" : "");
 const json = o => JSON.stringify(o).replace(/</g, "\\u003c");
 
 export function fmt(lang) {
-  const dn = (() => { try { return new Intl.DisplayNames([lang], { type: "region" }); } catch (e) { return null; } })();
   const nf = new Intl.NumberFormat(lang), cf = new Intl.NumberFormat(lang, { notation: "compact", maximumSignificantDigits: 3 });
   return {
     num: n => nf.format(n),
     big: n => n >= 100000 ? cf.format(n) : nf.format(n),
-    country: cc => { if (!cc) return ""; try { return dn ? dn.of(cc) : cc; } catch (e) { return cc; } },
+    country: cc => { if (!cc) return ""; try { return regionName(cc, lang); } catch (e) { return cc; } },
   };
 }
-export const flag = cc => /^[A-Z]{2}$/.test(cc || "") ? `<img class="flag" src="/flags/${cc.toLowerCase()}.svg" alt="" width="20" height="15">` : "";
+export const flag = cc => /^[A-Z]{2}$/.test(cc || "") ? `<img class="flag" src="/flags/${flagCode(cc)}.svg" alt="" width="20" height="15">` : "";
 
 // The AS's display name: the well-known name if there is one, else the registry handle
 export const asName = (asn, rec, lang) => knownName(asn, lang) || (rec && rec.h) || "";

@@ -43,3 +43,15 @@ test("names and holders are escaped", () => {
   const r = asPage({ T: T("en"), lang: "en", site, asn: 64496, rec: { h: "<x>", n: "a&b", r: "ARIN", p4: [], p6: [], n4: 0, n6: 0 } });
   assert.ok(!r.main.includes("<x>"));
 });
+
+test("TW is named 中国台湾 / Taiwan, China with the flag of China", () => {
+  const tw = { h: "HINET-NET", cc: "TW", r: "APNIC", d: "1997-01-01", p4: [], p6: [], n4: 0, n6: 0, c4: 0, c6: 0 };
+  for (const [lang, name] of [["zh-CN", "中国台湾"], ["zh-TW", "中國台灣"], ["en", "Taiwan, China"], ["ko", "중국 대만"], ["fr", "Taïwan, Chine"], ["ru", "Тайвань, Китай"]]) {
+    const r = asPage({ T: T(lang), lang, site, asn: 3462, rec: tw });
+    assert.ok(r.main.includes(`<img class="flag" src="/flags/cn.svg" alt="" width="20" height="15"> ${name}`), lang);
+    assert.ok(r.desc.includes(name), lang);
+    assert.doesNotMatch(r.main, /tw\.svg/);
+  }
+  const ip = ipPage({ T: T("ja"), lang: "ja", site, hit: { ip: "168.95.1.1", asn: 3462, rec: tw, pfx: "168.95.0.0/16", range: "" } });
+  assert.match(ip.main, /flags\/cn\.svg"[^>]*> 中国台湾/);
+});
