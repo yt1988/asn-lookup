@@ -29,7 +29,9 @@ const SEARCH = (T, home, value = "") => `<form class="ask" action="${home}q" met
   <button class="btn pri" type="submit">${esc(T("go"))}</button>
 </form>`;
 const kv = rows => `<ul class="kv">${rows.map(([k, v, attr = ""]) => `<li${attr}><span>${esc(k)}</span><b>${v}</b></li>`).join("")}</ul>`;
-const SKL = '<i class="skl"></i>';
+// a space a template leaves between two Chinese or Japanese characters ("是 {holder}" with a Chinese name)
+const CJK_SP = /([぀-ヿ一-鿿]) (?=[぀-ヿ一-鿿])/g;
+const SKL ='<i class="skl"></i>';
 // after a link to another 1ms.dog tool (the site uses this icon for those, not an arrow)
 const EXT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
 const LISTED = 48;     // prefixes per family on the page; "show all" brings the rest
@@ -112,7 +114,7 @@ export function asPage({ T, lang, site, asn, rec, meta }) {
   const desc = fill(T("as_desc"), { as, name: holder || name, cc: cc ? fill(T("as_desc_cc"), { cc }) : "", n4: F.num(n4), n6: F.num(n6) });
   const lead = ((rec.r ? fill(T("as_lead"), { as, holder: esc(holder || name), rir: rec.r }) : "") + " " +
     (routed && (n4 || n6) ? fill(T("as_lead_r"), { n4: F.num(n4), n6: F.num(n6), c4: F.big(rec.c4 || 0) }) : T("as_lead_none")))
-    .replace(/([）」])\s+/g, "$1");   // no space after a full-width closing bracket
+    .replace(/([）」。])\s+/g, "$1").replace(CJK_SP, "$1");   // no space after a full-width bracket or stop, or between two CJK characters
 
   const rows = [
     [T("k_name"), esc(rec.h || "–")],
@@ -175,7 +177,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
     [T("k_as"), asLink(home, hit.asn, name, hit.rec && hit.rec.cc)],
     [T("k_pfx"), hit.pfx ? `<span class="mono">${esc(hit.pfx)}</span>` : "–"],
     [T("k_range"), `<span class="mono">${esc(hit.range || "–")}</span>`],
-    [T("k_cc"), hit.rec && hit.rec.cc ? `${flag(hit.rec.cc)} ${esc(cc)}` : "–"],
+    [T("k_ascc"), hit.rec && hit.rec.cc ? `${flag(hit.rec.cc)} ${esc(cc)}` : "–"],
   ] : [];
   const live = hit.private ? [] : [[T("k_net"), SKL, ' data-r="net"'], [T("k_org"), SKL, ' data-r="org"'], [T("k_ptr"), SKL, ' data-r="ptr"'], [T("k_abuse"), SKL, ' data-r="abuse"']];
   const main = `<section class="hero card">
@@ -184,14 +186,14 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
     <div class="ttl"><h1><span class="asn mono">${esc(ip)}</span></h1><p class="sub">${host ? esc(fill(T("ip_host"), { host, ip })) : hit.asn ? `${esc(as)} · ${esc(name)}` : "&nbsp;"}</p></div>
     <button class="btn sm pri" id="shareBtn" type="button" hidden>${esc(T("share"))}</button>
   </div>
-  ${hit.asn ? "" : `<p class="lead">${esc(desc)}</p>`}
+  <p class="lead">${hit.asn ? fill(T("ip_lead"), { as, name: esc(name) }).replace(CJK_SP, "$1") : esc(desc)}</p>
   ${rows.length || live.length ? `<div class="cols">${rows.length ? kv(rows) : ""}<div>${kv(live)}</div></div>` : ""}
   <p class="links">${hit.private ? "" : `<a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}${EXT}</a>`}${ip.includes(":") ? `<a class="xt" id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}${EXT}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
 </section>`;
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + "ip/" + ip, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];
   // the share card: the address, the AS announcing it, then the prefix, range and country
   const card = { big: ip, name: hit.asn ? `${as} · ${name}` : desc, sub: "", ts: meta && meta.at, rows: hit.asn ? [
-    { k: T("k_pfx"), v: hit.pfx || "–", mono: true }, { k: T("k_cc"), v: cc || "–", cc: hit.rec && hit.rec.cc },
+    { k: T("k_pfx"), v: hit.pfx || "–", mono: true }, { k: T("k_ascc"), v: cc || "–", cc: hit.rec && hit.rec.cc },
     { k: T("k_range"), v: hit.range || "–", mono: true, wide: true }] : [] };
   return { status: 200, rest: "ip/" + ip, title, desc, main, graph, robots: "noindex, follow",
     foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { ip, live: !hit.private, card } };

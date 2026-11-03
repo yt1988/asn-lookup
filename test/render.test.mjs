@@ -14,7 +14,8 @@ test("an AS page names the network the way searchers do", () => {
   assert.equal(r.status, 200);
   assert.match(r.title, /^AS4134 中国电信 163 骨干网（CHINANET-BACKBONE）/);
   assert.match(r.main, /<h1><span class="asn">AS4134<\/span> <span>中国电信 163 骨干网<\/span><\/h1>/);
-  assert.match(r.main, /727 个 IPv4 前缀/);
+  assert.match(r.main, /727 个 IPv4 段/);
+  assert.match(r.main, /是中国电信 163 骨干网（CHINANET-BACKBONE）在互联网上的网络编号（ASN），由 APNIC 分配。它目前/);   // no stray spaces in the lead
   assert.match(r.main, /href="\/zh-cn\/AS4809"/);
   assert.match(r.main, /href="\/zh-cn\/ip\/1.48.0.0\/15"/);
   assert.match(r.main, /data-all="4"/);   // more prefixes than the page lists
@@ -32,7 +33,7 @@ test("an unallocated AS is a 404 kept out of the index", () => {
 
 test("an address page", () => {
   const r = ipPage({ T: T("en"), lang: "en", site, hit: { ip: "8.8.8.8", asn: 15169, rec: { h: "GOOGLE", cc: "US" }, pfx: "8.8.8.0/24", range: "8.8.8.0 – 8.8.8.255" } });
-  assert.match(r.title, /^8\.8\.8\.8 – owner AS15169 Google/);
+  assert.match(r.title, /^8\.8\.8\.8 belongs to AS15169 Google/);
   assert.match(r.main, /8\.8\.8\.0\/24/);
   const p = ipPage({ T: T("en"), lang: "en", site, hit: { ip: "10.0.0.1", private: true } });
   assert.match(p.main, /private or reserved/);

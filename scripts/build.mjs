@@ -29,7 +29,7 @@ const sha = s => createHash("sha256").update(s).digest("base64");
 
 // Strings only the server uses (the page already shows them); everything else goes to the browser
 const SERVER_ONLY = new Set(["seo_title", "seo_desc", "seo_kw", "og_sub", "h1", "docs", "lang_label", "faq_h", "as_title", "as_desc", "as_desc_cc", "as_lead",
-  "as_lead_r", "as_lead_none", "as_404", "ip_title", "ip_title_none", "ip_desc", "ip_none", "ip_private", "ip_host", "ip_as_more", "foot", "foot_home",
+  "as_lead_r", "as_lead_none", "as_404", "ip_title", "ip_title_none", "ip_desc", "ip_lead", "k_ascc", "ip_none", "ip_private", "ip_host", "ip_as_more", "foot", "foot_home",
   "g_cn", "g_cloud", "g_intl", "pop_h", "h_ext", "h_sib", "sib_n", "nb_note"]);
 
 export async function build({ check = false } = {}) {
