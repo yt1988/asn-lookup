@@ -7,13 +7,13 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .btn.pri { background: var(--ink); color: var(--ink-fg); border-color: transparent; font-weight: 600; min-width: 88px; }
 .btn.sm { height: 30px; padding: 0 12px; font-size: 13px; }
 .btn:disabled { opacity: .5; cursor: default; }
-.mini { margin-left: auto; border: 1px solid var(--line); background: transparent; border-radius: 6px; font-size: 11px; padding: 1px 7px; cursor: pointer; color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.mini { margin-left: auto; border: 1px solid var(--line); background: transparent; border-radius: 6px; font-size: 12px; padding: 1px 7px; cursor: pointer; color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
 .mini:hover { color: var(--ink); border-color: var(--ink); }
 .flag { width: 18px; height: 13px; border-radius: 2px; box-shadow: 0 0 0 1px var(--line); object-fit: cover; flex: none; vertical-align: -1px; }
 /* a placeholder the height of a line of text */
 .skl { display: inline-block; width: 60%; max-width: 220px; height: 10px; border-radius: 5px; background: var(--soft); vertical-align: middle; animation: blink 1.4s ease-in-out infinite; }
 @keyframes blink { 50% { opacity: .45; } }
-.sec-h { display: flex; align-items: center; gap: 8px; height: 22px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
+.sec-h { display: flex; align-items: center; gap: 8px; min-height: 22px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
 .sec-h .eg { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px; color: var(--muted); text-decoration: none; }
 .sec-h .eg:hover { color: var(--ink); }
 .kv { list-style: none; margin: 0; padding: 0; }
@@ -26,7 +26,8 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 
 /* the search box (with what the server couldn't read under it) */
 .ask { position: relative; display: flex; gap: 8px; width: 100%; max-width: 620px; }
-.ask input { flex: 1; width: 0; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: 14px var(--f-num); outline: none; }
+.ask input { flex: 1; width: 0; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: 16px var(--f-num); outline: none; }   /* 16px: iOS zooms into smaller fields */
+.ask input::placeholder { font-family: var(--f-ui); }
 .ask input:focus { border-color: var(--ink); }
 .ask .btn { height: 40px; }
 .err { position: absolute; left: 0; top: calc(100% + 6px); z-index: 5; background: var(--bad); color: #fff; font-size: 12.5px; font-weight: 500; padding: 5px 10px; border-radius: 7px; max-width: 100%; }
@@ -100,6 +101,16 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); z-index: 60; transform: translate(-50%, 8px); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 9px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
+/* on touch screens every link standing on its own is at least 32px tall (the look stays the same), with room between */
+@media (pointer: coarse) {
+  .asl, .links a, .sec-h .eg, .ext a, .kv b a { min-height: 32px; display: inline-flex; align-items: center; }
+  .chips { row-gap: 4px; }
+  .chips .asl, .nbl .asl { flex: 1; }
+  .nbl li { height: 38px; }
+  .plist li { line-height: 34px; }
+  .plist a { display: block; }
+  .mini { padding: 5px 10px; }
+}
 @media (prefers-reduced-motion: reduce) { .skl { animation: none !important; } .toast { transition: none !important; } }
 @media (max-width: 860px) {
   .pfxs, .nbs { grid-template-columns: minmax(0, 1fr); }
@@ -108,7 +119,9 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 @media (max-width: 720px) {
   .hero, .pop, .pfxs, .nb, .sib { padding: 16px; }
   .hero h1 { font-size: 20px; }
-  .ask input { font-size: 16px; }   /* iOS zooms into smaller fields */
+  /* the whole hint fits beside the button (a smaller hint doesn't make iOS zoom: the field's own size does) */
+  .ask input::placeholder { font-size: 14px; }
+  .ask .btn.pri { min-width: 0; }
   .cols, .me .kv { grid-template-columns: minmax(0, 1fr); }
   .me .kv li:nth-child(2), .cols > div > .kv li:first-child { border-top: 1px solid var(--line); }
   .kv li { grid-template-columns: 84px minmax(0, 1fr); }

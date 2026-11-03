@@ -8,7 +8,7 @@ export default {
   seo_kw: "ASN 查詢, AS 號碼查詢, IP 歸屬查詢, IP 是哪家的, IP 網段查詢, AS3462, HiNet, BGP 前綴, whois",
   og_sub: "一個 IP 屬於哪個網路；每個 AS 號碼的網段、上游與所屬機構。",
   h1: "IP / ASN 查詢",
-  ph: "IP、ASN 或網域，如 8.8.8.8、AS3462",
+  ph: "8.8.8.8、AS3462 或網域",
   go: "查詢",
   a_theme: "主題",
   th_system: "主題：跟隨系統",

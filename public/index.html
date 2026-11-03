@@ -41,7 +41,7 @@
 <meta name="twitter:description" content="Free ASN lookup and IP owner lookup. Find which network an IP address belongs to, every AS number's owner, country, registry, IPv4 and IPv6 prefixes, upstreams and sibling ASNs.">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"ASN Lookup · 1ms.dog","url":"https://asn.1ms.dog/","image":"https://asn.1ms.dog/og/en.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"Free ASN lookup and IP owner lookup. Find which network an IP address belongs to, every AS number's owner, country, registry, IPv4 and IPv6 prefixes, upstreams and sibling ASNs.","inLanguage":"en","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is an ASN?","acceptedAnswer":{"@type":"Answer","text":"An autonomous system number (ASN) identifies a network that runs its own routing on the internet: a carrier, a cloud, a university, a large company. Each one announces the IP prefixes it carries to its neighbours over BGP, and that is how the rest of the internet knows where to send traffic. Numbers are handed out by the five regional internet registries (APNIC, RIPE NCC, ARIN, LACNIC and AFRINIC). AS4134, for example, is China Telecom's 163 backbone; AS13335 is Cloudflare."}},{"@type":"Question","name":"How do I find who owns an IP?","acceptedAnswer":{"@type":"Answer","text":"Type the address in the box. The page shows which AS announces it and in which prefix, the registry's record for the block (network name, organization, country, abuse contact) and its reverse DNS. The AS that routes an address and the organization it is registered to are often different: a cloud or hosting company can announce a customer's own block."}},{"@type":"Question","name":"Where does the data come from, and how fresh is it?","acceptedAnswer":{"@type":"Answer","text":"Prefixes come from RIPE NCC's Routing Information Service, which collects routing tables from hundreds of networks; a prefix is listed when at least ten of them see it. Address-to-AS lookups use iptoasn.com (public domain). Names, countries and allocation dates come from the five registries' published files. All of these are refreshed every day. The registry record, reverse DNS and neighbours are asked live (RDAP, DNS, RIPEstat) when you open a page."}},{"@type":"Question","name":"What do upstream and downstream mean?","acceptedAnswer":{"@type":"Answer","text":"An upstream is a network this AS buys transit from, or that sits between it and most of the internet; a downstream is one that reaches the internet through it. The split is inferred from the paths RIPE's collectors see, so peers and networks that only appear on some paths are grouped separately. The list is ranked by how many paths pass through each neighbour, so the most important connections come first."}},{"@type":"Question","name":"What are CN2, 9929 and CMI?","acceptedAnswer":{"@type":"Answer","text":"They are the premium international networks of China's three carriers, often advertised for VPS routes to China: AS4809 is China Telecom's CN2 (the plain backbone is AS4134, \"163\"), AS9929 is China Unicom's premium network (the plain one is AS4837, \"169\"), and AS58453 is China Mobile International (the domestic network is AS9808). Which one a server's traffic uses depends on the route back to you; a traceroute shows the AS numbers along the path."}},{"@type":"Question","name":"Can I copy the prefix list?","acceptedAnswer":{"@type":"Answer","text":"Yes. \"Copy all\" copies every IPv4 or IPv6 prefix of the AS, one per line, ready for a firewall or a proxy rule list. /api/as/\u003casn> answers with the full data in JSON for any AS."}}]}]}</script>
 <link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.efed0b54ab.css">
+<link rel="stylesheet" href="/assets/app.d157d2b58f.css">
 </head>
 <body>
 <div class="app">
@@ -70,8 +70,8 @@
 <section class="hero card">
   <h1>IP and ASN lookup</h1>
   <form class="ask" action="/q" method="get" role="search" autocomplete="off">
-  <label class="sr" for="q" data-k="ph">IP, ASN or domain, e.g. 8.8.8.8, AS4134</label>
-  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="IP, ASN or domain, e.g. 8.8.8.8, AS4134" value="">
+  <label class="sr" for="q" data-k="ph">8.8.8.8, AS4134 or a domain</label>
+  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="8.8.8.8, AS4134 or a domain" value="">
   <button class="btn pri" type="submit">Look up</button>
 </form>
   <div class="me" id="me">
@@ -103,7 +103,7 @@
   </div>
 </div>
 <script type="application/json" id="data">{"lang":"en","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
-<script src="/assets/l.en.b7ac2475be.js"></script>
-<script src="/assets/app.de422d7fe6.js"></script>
+<script src="/assets/l.en.13186dbfa2.js"></script>
+<script src="/assets/app.73c0c67685.js"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@ export default {
   seo_kw: "ASN 検索, AS 番号, IP アドレス 検索, IP 持ち主, whois, BGP プレフィックス, IP アドレス 範囲",
   og_sub: "IP アドレスがどのネットワークのものか。各 AS のプレフィックス、上流、組織。",
   h1: "IP・ASN 検索",
-  ph: "IP、ASN、ドメイン（例：8.8.8.8、AS2516）",
+  ph: "8.8.8.8、AS2516、ドメイン",
   go: "検索",
   a_theme: "テーマ",
   th_system: "テーマ：システム",

@@ -44,7 +44,7 @@
 <meta name="twitter:description" content="免费的 ASN 查询和 IP 归属查询：一个 IP 属于哪家运营商、哪个自治系统；每个 AS 号的所属机构、国家/地区、注册机构、IPv4 和 IPv6 IP 段、上游和同一机构的其他 ASN。">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"ASN 查询 · 1ms.dog","url":"https://asn.1ms.dog/zh-cn/","image":"https://asn.1ms.dog/og/zh-cn.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"免费的 ASN 查询和 IP 归属查询：一个 IP 属于哪家运营商、哪个自治系统；每个 AS 号的所属机构、国家/地区、注册机构、IPv4 和 IPv6 IP 段、上游和同一机构的其他 ASN。","inLanguage":"zh-CN","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASN 是什么？","acceptedAnswer":{"@type":"Answer","text":"ASN（自治系统号）是互联网上一个独立运行路由的网络的编号，比如一家运营商、一家云厂商、一所大学或一家大公司。每个 AS 通过 BGP 向邻居宣告自己负责的 IP 段，互联网上的其他网络就知道该把流量送到哪里。 AS 号由五大区域互联网注册机构（APNIC、RIPE NCC、ARIN、LACNIC、AFRINIC）分配。比如 AS4134 是中国电信 163 骨干网，AS13335 是 Cloudflare。"}},{"@type":"Question","name":"怎么查一个 IP 属于哪家？","acceptedAnswer":{"@type":"Answer","text":"在输入框里填 IP 地址。页面会显示由哪个 AS 宣告、所在前缀，注册机构登记的信息（网络名称、组织、国家/地区、滥用投诉邮箱）和反向解析。 负责路由的 AS 和登记的组织经常不是同一家：云厂商、IDC 可以替客户宣告客户自己的 IP 段。"}},{"@type":"Question","name":"数据从哪来？多久更新？","acceptedAnswer":{"@type":"Answer","text":"前缀来自 RIPE NCC 的路由信息服务（RIS），它从几百个网络收集路由表，至少 10 个网络看得到的前缀才算数。IP 对应的 AS 用的是 iptoasn.com（公有领域）。名称、国家/地区和分配日期来自五大注册机构公开的文件。这些数据每天更新。 注册信息、反向解析和邻居是打开页面时实时查询的（RDAP、DNS、RIPEstat）。"}},{"@type":"Question","name":"上游、下游是什么意思？","acceptedAnswer":{"@type":"Answer","text":"上游是这个 AS 购买转接的网络，或者位于它和大部分互联网之间的网络；下游是通过它接入互联网的网络。这是根据 RIPE 采集器看到的路径推断的，只在部分路径上出现的对等网络单独列出。 列表按经过每个邻居的路径数排序，最重要的连接排在前面。"}},{"@type":"Question","name":"CN2、9929、CMI 是什么？","acceptedAnswer":{"@type":"Answer","text":"它们是三大运营商的精品国际网络，买 VPS 时常看到：AS4809 是中国电信 CN2（普通骨干网是 AS4134，俗称 163），AS9929 是中国联通精品网（普通的是 AS4837，俗称 169），AS58453 是中国移动国际 CMI（国内网是 AS9808）。 服务器的流量走哪条，取决于回到你这边的路由；用 traceroute 能看到沿途经过的 AS 号。"}},{"@type":"Question","name":"能复制 IP 段列表吗？","acceptedAnswer":{"@type":"Answer","text":"可以。「复制全部」会把这个 AS 的全部 IPv4 或 IPv6 前缀复制出来，一行一个，可以直接用在防火墙或代理分流规则里。任何 AS 都可以用 /api/as/\u003cAS 号> 拿到 JSON 格式的完整数据。"}}]}]}</script>
 <link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.efed0b54ab.css">
+<link rel="stylesheet" href="/assets/app.d157d2b58f.css">
 </head>
 <body>
 <div class="app">
@@ -73,8 +73,8 @@
 <section class="hero card">
   <h1>IP / ASN 查询</h1>
   <form class="ask" action="/zh-cn/q" method="get" role="search" autocomplete="off">
-  <label class="sr" for="q" data-k="ph">IP、ASN 或域名，如 8.8.8.8、AS4134</label>
-  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="IP、ASN 或域名，如 8.8.8.8、AS4134" value="">
+  <label class="sr" for="q" data-k="ph">8.8.8.8、AS4134 或域名</label>
+  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="8.8.8.8、AS4134 或域名" value="">
   <button class="btn pri" type="submit">查询</button>
 </form>
   <div class="me" id="me">
@@ -106,7 +106,7 @@
   </div>
 </div>
 <script type="application/json" id="data">{"lang":"zh-CN","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
-<script src="/assets/l.zh-cn.4e101075dc.js"></script>
-<script src="/assets/app.de422d7fe6.js"></script>
+<script src="/assets/l.zh-cn.e094ac1af0.js"></script>
+<script src="/assets/app.73c0c67685.js"></script>
 </body>
 </html>

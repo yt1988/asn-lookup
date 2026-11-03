@@ -8,7 +8,7 @@ export default {
   seo_kw: "ASN lookup, IP lookup, IP owner, AS number, whois IP, BGP prefixes, IP ranges, autonomous system",
   og_sub: "Which network an IP belongs to, and every AS with its prefixes, upstreams and owner.",
   h1: "IP and ASN lookup",
-  ph: "IP, ASN or domain, e.g. 8.8.8.8, AS4134",
+  ph: "8.8.8.8, AS4134 or a domain",
   go: "Look up",
   a_theme: "Theme",
   th_system: "Theme: system",

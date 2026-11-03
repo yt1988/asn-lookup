@@ -8,7 +8,7 @@ export default {
   seo_kw: "ASN 查询, AS 号查询, IP 归属查询, IP 属于哪家, IP 段查询, AS4134, CN2, 9929, BGP 前缀, whois",
   og_sub: "一个 IP 属于哪家网络；每个 AS 号的 IP 段、上游和所属机构。",
   h1: "IP / ASN 查询",
-  ph: "IP、ASN 或域名，如 8.8.8.8、AS4134",
+  ph: "8.8.8.8、AS4134 或域名",
   go: "查询",
   a_theme: "主题",
   th_system: "主题：跟随系统",

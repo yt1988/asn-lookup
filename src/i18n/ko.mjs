@@ -8,7 +8,7 @@ export default {
   seo_kw: "ASN 조회, AS 번호 조회, IP 조회, IP 소유자, whois, BGP 프리픽스, IP 대역",
   og_sub: "IP 주소가 어느 네트워크 것인지, 각 AS의 프리픽스·업스트림·소유 기관까지.",
   h1: "IP · ASN 조회",
-  ph: "IP, ASN 또는 도메인 (예: 8.8.8.8, AS4766)",
+  ph: "8.8.8.8, AS4766, 도메인",
   go: "조회",
   a_theme: "테마",
   th_system: "테마: 시스템",

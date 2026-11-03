@@ -41,7 +41,7 @@
 <meta name="twitter:description" content="Consulta ASN e de IP grátis. A qual rede pertence um endereço IP e, para cada número AS: titular, país, registro, prefixos IPv4 e IPv6, provedores de trânsito e outros ASN do mesmo titular.">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"Consulta ASN · 1ms.dog","url":"https://asn.1ms.dog/pt/","image":"https://asn.1ms.dog/og/pt.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"Consulta ASN e de IP grátis. A qual rede pertence um endereço IP e, para cada número AS: titular, país, registro, prefixos IPv4 e IPv6, provedores de trânsito e outros ASN do mesmo titular.","inLanguage":"pt","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"O que é um ASN?","acceptedAnswer":{"@type":"Answer","text":"Um número de sistema autônomo (ASN) identifica uma rede que faz o próprio roteamento na internet: uma operadora, uma nuvem, uma universidade, uma grande empresa. Cada uma anuncia aos vizinhos, via BGP, os prefixos IP que transporta; é assim que o resto da internet sabe para onde mandar o tráfego. Os números são distribuídos pelos cinco registros regionais (APNIC, RIPE NCC, ARIN, LACNIC e AFRINIC). Por exemplo, AS28573 é a Claro Brasil e AS13335 é a Cloudflare."}},{"@type":"Question","name":"Como descubro de quem é um IP?","acceptedAnswer":{"@type":"Answer","text":"Digite o endereço na caixa. A página mostra qual AS o anuncia e em qual prefixo, o registro do bloco (nome da rede, organização, país, contato de abuso) e o DNS reverso. O AS que roteia um endereço e a organização em cujo nome ele está registrado muitas vezes são diferentes: uma nuvem ou hospedagem pode anunciar o bloco próprio de um cliente."}},{"@type":"Question","name":"De onde vêm os dados e com que frequência são atualizados?","acceptedAnswer":{"@type":"Answer","text":"Os prefixos vêm do Routing Information Service do RIPE NCC, que coleta tabelas de rotas de centenas de redes; um prefixo entra quando pelo menos dez delas o veem. A correspondência de endereço para AS é do iptoasn.com (domínio público). Nomes, países e datas de alocação vêm dos arquivos publicados pelos cinco registros. Tudo é atualizado diariamente. O registro, o DNS reverso e os vizinhos são consultados ao vivo (RDAP, DNS, RIPEstat) quando a página abre."}},{"@type":"Question","name":"O que significam provedores e clientes?","acceptedAnswer":{"@type":"Answer","text":"Um provedor (upstream) é uma rede da qual este AS compra trânsito, ou que fica entre ele e a maior parte da internet; um cliente (downstream) chega à internet por meio dele. Isso é deduzido das rotas que os coletores do RIPE veem, então peers e redes que só aparecem em algumas rotas ficam à parte. A lista é ordenada por quantas rotas passam por cada vizinho: as conexões mais importantes primeiro."}},{"@type":"Question","name":"O que são CN2, 9929 e CMI?","acceptedAnswer":{"@type":"Answer","text":"São as redes internacionais premium das três operadoras chinesas, muito citadas em VPS com rotas para a China: AS4809 é a CN2 da China Telecom (o backbone comum é o AS4134, “163”), AS9929 é a rede premium da China Unicom (a comum é o AS4837, “169”) e AS58453 é a China Mobile International (a rede nacional é o AS9808). Qual rede o tráfego de um servidor usa depende da rota de volta até você; um traceroute mostra os números AS no caminho."}},{"@type":"Question","name":"Posso copiar a lista de prefixos?","acceptedAnswer":{"@type":"Answer","text":"Sim. “Copiar tudo” copia todos os prefixos IPv4 ou IPv6 do AS, um por linha, prontos para um firewall ou regras de proxy. /api/as/\u003casn> devolve os dados completos de qualquer AS em JSON."}}]}]}</script>
 <link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.efed0b54ab.css">
+<link rel="stylesheet" href="/assets/app.d157d2b58f.css">
 </head>
 <body>
 <div class="app">
@@ -70,8 +70,8 @@
 <section class="hero card">
   <h1>Consulta de IP e ASN</h1>
   <form class="ask" action="/pt/q" method="get" role="search" autocomplete="off">
-  <label class="sr" for="q" data-k="ph">IP, ASN ou domínio, ex.: 8.8.8.8, AS28573</label>
-  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="IP, ASN ou domínio, ex.: 8.8.8.8, AS28573" value="">
+  <label class="sr" for="q" data-k="ph">8.8.8.8, AS7738 ou domínio</label>
+  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="8.8.8.8, AS7738 ou domínio" value="">
   <button class="btn pri" type="submit">Consultar</button>
 </form>
   <div class="me" id="me">
@@ -103,7 +103,7 @@
   </div>
 </div>
 <script type="application/json" id="data">{"lang":"pt","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
-<script src="/assets/l.pt.bd6126909d.js"></script>
-<script src="/assets/app.de422d7fe6.js"></script>
+<script src="/assets/l.pt.4cccf7ad48.js"></script>
+<script src="/assets/app.73c0c67685.js"></script>
 </body>
 </html>

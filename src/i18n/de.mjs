@@ -8,7 +8,7 @@ export default {
   seo_kw: "ASN Abfrage, AS-Nummer, IP Abfrage, wem gehört die IP, IP Whois, BGP Präfixe, IP-Bereiche",
   og_sub: "Zu welchem Netz eine IP gehört – und jedes AS mit Präfixen, Upstreams und Inhaber.",
   h1: "IP- und ASN-Abfrage",
-  ph: "IP, ASN oder Domain, z. B. 8.8.8.8, AS3320",
+  ph: "8.8.8.8, AS3320 oder Domain",
   go: "Suchen",
   a_theme: "Design",
   th_system: "Design: System",

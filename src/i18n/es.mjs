@@ -8,7 +8,7 @@ export default {
   seo_kw: "consulta ASN, buscar ASN, consulta IP, de quién es esta IP, número AS, whois IP, prefijos BGP, rangos IP",
   og_sub: "A qué red pertenece una IP, y cada AS con sus prefijos, proveedores y titular.",
   h1: "Consulta de IP y ASN",
-  ph: "IP, ASN o dominio, p. ej. 8.8.8.8, AS4134",
+  ph: "8.8.8.8, AS4134 o dominio",
   go: "Buscar",
   a_theme: "Tema",
   th_system: "Tema: sistema",
