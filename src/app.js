@@ -77,7 +77,7 @@ import { knownName } from "./popular.mjs";
   if (shareBtn && D.card) {
     shareBtn.hidden = false;
     shareBtn.onclick = async () => {
-      const { share } = await import("/assets/share/share.js?v=4");
+      const { share } = await import("/assets/share/share.js?v=5");
       const url = location.origin + HOME + "r/1~" + Date.now().toString(36) + "~" + D.rest;
       share({
         lang: LANG, name: t("app_name"), file: D.card.big.replace(/[^\w.-]+/g, "_"),
@@ -89,7 +89,7 @@ import { knownName } from "./popular.mjs";
   }
   // someone's shared AS or address: the banner above it, whose button looks up the visitor's own (their AS on an AS
   // page, their address on an address page)
-  if (D.shared) import("/assets/share/share.js?v=4").then(({ received }) => received({
+  if (D.shared) import("/assets/share/share.js?v=5").then(({ received }) => received({
     lang: LANG, ts: D.shared, at: $(".hero"),
     test: async () => {
       try {
