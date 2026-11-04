@@ -75,7 +75,8 @@ export async function build({ check = false } = {}) {
     files[(slug ? slug + "/" : "") + "index.html"] = html;
   }
 
-  files["robots.txt"] = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /q\nDisallow: /tpl/\nDisallow: /data/\nDisallow: /ip/\nDisallow: /*/ip/\n\nSitemap: ${SITE}/sitemap.xml\n`;
+  // ClaudeBot (Anthropic's crawler) is kept out of the whole site, at the owner's wish (2026-11-04)
+  files["robots.txt"] = `User-agent: ClaudeBot\nDisallow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /q\nDisallow: /tpl/\nDisallow: /data/\nDisallow: /ip/\nDisallow: /*/ip/\n\nSitemap: ${SITE}/sitemap.xml\n`;
   files["llms.txt"] = `# ASN Lookup · 1ms.dog
 
 > Free IP and ASN lookup. For any IP address: the autonomous system announcing it, the announced prefix holding it,
