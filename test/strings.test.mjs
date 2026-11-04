@@ -15,10 +15,13 @@ test("every language has every key, with the same placeholders", () => {
   for (const [lang] of LANGS) {
     const d = STRINGS[lang];
     assert.deepEqual(Object.keys(en).filter(k => !(k in d)), [], `${lang} is missing keys`);
-    assert.deepEqual(Object.keys(d).filter(k => !(k in en)), [], `${lang} has extra keys`);
+    // more plural forms than English (Russian key_few, key_many) are the language's own; anything else is extra
+    const form = k => /^(\w+)_(zero|two|few|many)$/.exec(k);
+    const ph = s => all(s, /\{(\w+)\}/g).sort().join(",");
+    assert.deepEqual(Object.keys(d).filter(k => !(k in en) && !(form(k) && form(k)[1] in en)), [], `${lang} has extra keys`);
+    for (const k in d) if (!(k in en)) assert.equal(ph(d[k]), ph(en[form(k)[1]]), `${lang}.${k} placeholders`);
     for (const k in en) {
       if (typeof en[k] !== "string") continue;
-      const ph = s => all(s, /\{(\w+)\}/g).sort().join(",");
       assert.equal(ph(d[k]), ph(en[k]), `${lang}.${k} placeholders`);
     }
     assert.equal(d.docs.length, en.docs.length, `${lang} FAQ`);

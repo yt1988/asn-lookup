@@ -12,9 +12,17 @@ const json = o => JSON.stringify(o).replace(/</g, "\\u003c");
 
 export function fmt(lang) {
   const nf = new Intl.NumberFormat(lang), cf = new Intl.NumberFormat(lang, { notation: "compact", maximumSignificantDigits: 3 });
+  const pr = new Intl.PluralRules(lang), big = n => n >= 100000 ? cf.format(n) : nf.format(n);
   return {
     num: n => nf.format(n),
-    big: n => n >= 100000 ? cf.format(n) : nf.format(n),
+    big,
+    // n with its noun: key_<plural rule> (key_one, Russian key_few / key_many) when the language has it, else key
+    // (docs/translation.md in 1ms-shell, "复数"); compact: big numbers as "2.4M"
+    count: (T, key, n, compact = false) => {
+      let s;
+      try { s = T(key + "_" + pr.select(n)); } catch (e) {}   // the build's T throws on a key the language doesn't have
+      return fill(s || T(key), { n: compact ? big(n) : nf.format(n) }).replace(CJK_SP, "$1");   // "243万 个" → "243万个"
+    },
     country: cc => { if (!cc) return ""; try { return regionName(cc, lang); } catch (e) { return cc; } },
   };
 }
@@ -112,10 +120,11 @@ export function asPage({ T, lang, site, asn, rec, meta }) {
   const P = (a, b) => fill(T("paren"), { a, b });
   const lead1 = known || rec.n || rec.h || "", holder = lead1 && rec.h && lead1 !== rec.h ? P(lead1, rec.h) : lead1;
   const n4 = rec.n4 || 0, n6 = rec.n6 || 0;
+  const v4 = F.count(T, "n_pfx", n4) + " · " + F.count(T, "n_addr", rec.c4 || 0, true), v6 = F.count(T, "n_pfx", n6) + " · " + F.count(T, "n_48", rec.c6 || 0, true);
   const title = fill(T("as_title"), { as, name: known && rec.h && known !== rec.h ? P(known, rec.h) : name }).replace(/\s+/g, " ").trim();
-  const desc = fill(T("as_desc"), { as, name: holder || name, cc: cc ? fill(T("as_desc_cc"), { cc }) : "", n4: F.num(n4), n6: F.num(n6) });
+  const desc = fill(T("as_desc"), { as, name: holder || name, cc: cc ? fill(T("as_desc_cc"), { cc }) : "", p4: F.count(T, "n_pfx4", n4), p6: F.count(T, "n_pfx6", n6) });
   const lead = ((rec.r ? fill(T("as_lead"), { as, holder: esc(holder || name), rir: rec.r }) : "") + " " +
-    (routed && (n4 || n6) ? fill(T("as_lead_r"), { n4: F.num(n4), n6: F.num(n6), c4: F.big(rec.c4 || 0) }) : T("as_lead_none")))
+    (routed && (n4 || n6) ? fill(T("as_lead_r"), { p4: F.count(T, "n_pfx4", n4), p6: F.count(T, "n_pfx6", n6), a4: F.count(T, "n_addr", rec.c4 || 0, true) }) : T("as_lead_none")))
     .replace(/([）」。])\s+/g, "$1").replace(CJK_SP, "$1");   // no space after a full-width bracket or stop, or between two CJK characters
 
   const rows = [
@@ -124,8 +133,8 @@ export function asPage({ T, lang, site, asn, rec, meta }) {
     [T("k_cc"), rec.cc ? `${flag(rec.cc)} ${esc(cc)}` : "–"],
     [T("k_rir"), esc(rec.r || "–")],
     [T("k_date"), esc(rec.d || "–")],
-    [T("k_v4"), n4 ? esc(fill(T("v_pfx4"), { n: F.num(n4), c: F.big(rec.c4 || 0) })) : esc(T("v_none"))],
-    [T("k_v6"), n6 ? esc(fill(T("v_pfx6"), { n: F.num(n6), c: F.big(rec.c6 || 0) })) : esc(T("v_none"))],
+    [T("k_v4"), n4 ? esc(v4) : esc(T("v_none"))],
+    [T("k_v6"), n6 ? esc(v6) : esc(T("v_none"))],
   ];
   const live = [[T("k_org"), SKL, ' data-r="org"'], [T("k_abuse"), SKL, ' data-r="abuse"'], [T("k_upd"), SKL, ' data-r="upd"']];
 
@@ -160,8 +169,8 @@ ${sib}
   // the share card (src/app.js): the AS, its name, then country, registry and what it announces
   const card = { big: as, name, sub: known && rec.h && known !== rec.h ? rec.h : "", ts: meta && meta.at, rows: [
     { k: T("k_cc"), v: cc || "–", cc: rec.cc }, { k: T("k_rir"), v: rec.r || "–" },
-    { k: T("k_v4"), v: n4 ? fill(T("v_pfx4"), { n: F.num(n4), c: F.big(rec.c4 || 0) }) : T("v_none") },
-    { k: T("k_v6"), v: n6 ? fill(T("v_pfx6"), { n: F.num(n6), c: F.big(rec.c6 || 0) }) : T("v_none") }] };
+    { k: T("k_v4"), v: n4 ? v4 : T("v_none") },
+    { k: T("k_v6"), v: n6 ? v6 : T("v_none") }] };
   return { status: 200, rest: as, title, desc, main, graph, robots: routed ? undefined : "noindex, follow",
     foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { asn, x: !!rec.x, card } };
 }
