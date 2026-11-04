@@ -83,13 +83,15 @@ async function getJSON(u, ms = 6000, headers = {}) {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
 }
-// a day in this data center's cache
+// a day in this data center's cache; an error, or a body marked [NOCACHE] (part of it missing), is answered but not kept
+const NOCACHE = Symbol("nocache");
 async function cached(request, ctx, make) {
   const key = new Request(new URL(request.url).toString(), { method: "GET" });
   const c = caches.default, hit = await c.match(key);
   if (hit) return hit;
   let body, ok = true;
   try { body = await make(); } catch (e) { ok = false; body = { error: String(e && e.message || e).slice(0, 80) }; }
+  if (body && body[NOCACHE]) ok = false;
   const res = json(body, 200, { "Cache-Control": ok ? `public, max-age=${DAY}` : "no-store" });
   if (ok) ctx.waitUntil(c.put(key, res.clone()));
   return res;
@@ -115,6 +117,17 @@ function rdapPick(j) {
   };
 }
 const RDAP = { Accept: "application/rdap+json, application/json" };
+// RDAP servers: the registry that holds the AS (from our data) first, then ARIN (which redirects to the others) and
+// rdap.org's bootstrap redirect, so one registry unreachable from Cloudflare (ARIN, HTTP 525, 2026-11) leaves the others
+const RIRS = { ARIN: "https://rdap.arin.net/registry/", APNIC: "https://rdap.apnic.net/", RIPE: "https://rdap.db.ripe.net/",
+  LACNIC: "https://rdap.lacnic.net/rdap/", AFRINIC: "https://rdap.afrinic.net/rdap/" };
+async function rdap(rir, q) {
+  let err;
+  for (const base of new Set([RIRS[rir], RIRS.ARIN, "https://rdap.org/"].filter(Boolean))) {
+    try { return rdapPick(await getJSON(base + q, 4000, RDAP)); } catch (e) { err = e; }
+  }
+  throw err;
+}
 // DNS over HTTPS (JSON), Cloudflare's resolver first, then Google's
 const doh = (name, type) => getJSON(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`, 3000, { Accept: "application/dns-json" })
   .catch(() => getJSON(`https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`, 3000));
@@ -218,13 +231,14 @@ export default {
       const { x, ...r } = rec;
       return json({ asn, name: knownName(asn, "en") || r.h || null, ...r, ...(full || {}) }, 200, { "Cache-Control": "public, max-age=3600" });
     }
-    if ((m = /^\/api\/rdap\/as\/(\d{1,10})$/.exec(p))) return cached(request, ctx, async () => rdapPick(await getJSON(`https://rdap.arin.net/registry/autnum/${m[1]}`, 6000, RDAP)));
+    if ((m = /^\/api\/rdap\/as\/(\d{1,10})$/.exec(p))) return cached(request, ctx, async () => rdap(((await asRec(env, o, +m[1])) || {}).r, `autnum/${m[1]}`));
     if ((m = /^\/api\/rdap\/ip\/(.+)$/.exec(p))) {
       if (!family(m[1]) || !isPublic(canon(m[1]))) return json({ error: "not a public IP address" }, 400);
       const ip = canon(m[1]);
       return cached(request, ctx, async () => {
-        const [r, h] = await Promise.all([getJSON(`https://rdap.arin.net/registry/ip/${ip}`, 6000, RDAP).then(rdapPick).catch(() => ({})), ptr(ip).catch(() => "")]);
-        return { ...r, ptr: h };
+        // the registry of the AS announcing it first; without a record the reverse DNS is still answered, but not kept
+        const [r, h] = await Promise.all([lookup(env, o, ip).then(hit => rdap(hit && hit.rec && hit.rec.r, `ip/${ip}`)).catch(() => null), ptr(ip).catch(() => "")]);
+        return r ? { ...r, ptr: h } : { ptr: h, [NOCACHE]: true };
       });
     }
     if ((m = /^\/api\/nb\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => neighbours(env, o, +m[1]));
