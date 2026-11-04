@@ -83,7 +83,7 @@ import { regionName, flagCode } from "./region.mjs";
       share({
         lang: LANG, name: t("app_name"), file: D.card.big.replace(/[^\w.-]+/g, "_"),
         link: () => url, home: location.origin + HOME, text: () => document.title,
-        height: 630, draw: (x, kit) => drawCard(x, kit, D.card),
+        height: async (x, kit) => Math.max(630, await drawCard(x, kit, D.card, false) + 70), draw: (x, kit) => drawCard(x, kit, D.card),
         ts: Date.parse(D.card.ts) || Date.now(),
       }).open();
     };
@@ -99,23 +99,40 @@ import { regionName, flagCode } from "./region.mjs";
       } catch (e) { location.href = HOME; }
     },
   }), () => {});
-  async function drawCard(x, kit, c) {
-    const { W, P, F, M, v, clip, img } = kit, w = W - P * 2;
+  // The card shows every word (1ms-shell docs/tool-contract.md, "Share card"): the AS or address shrinks to fit, the
+  // name and handle wrap, a fact too long for half the width takes the whole row, and the card grows to hold it all.
+  // Without draw (the height pass) it only measures: returns the bottom of the last line.
+  async function drawCard(x, kit, c, draw = true) {
+    const { W, P, F, M, v, wrap, img } = kit, w = W - P * 2;
+    const text = (s, ax, ay, font, color) => { x.font = font; if (draw) { x.fillStyle = v(color); x.fillText(s, ax, ay); } };
     x.textBaseline = "alphabetic"; x.textAlign = "left";
-    x.fillStyle = v("ink"); x.font = `700 72px ${M}`; x.fillText(clip(x, c.big, w), P, kit.top + 78);
-    x.fillStyle = v("fg"); x.font = `650 38px ${F}`; x.fillText(clip(x, c.name, w), P, kit.top + 134);
-    if (c.sub) { x.fillStyle = v("muted"); x.font = `500 24px ${M}`; x.fillText(clip(x, c.sub, w), P, kit.top + 172); }
-    // the facts, two to a row; a wide one takes the whole row
-    let col = 0, y = kit.top + 222;
+    let z = 72;   // the AS or address, monospaced: a long IPv6 address shrinks
+    for (; z > 40; z -= 2) { x.font = `700 ${z}px ${M}`; if (x.measureText(c.big).width <= w) break; }
+    let y = kit.top + 78;
+    text(c.big, P, y, `700 ${z}px ${M}`, "ink");
+    x.font = `650 38px ${F}`; y += 56;
+    for (const l of wrap(x, c.name, w, 3)) { text(l, P, y, x.font, "fg"); y += 48; }
+    y -= 48;
+    if (c.sub) { x.font = `500 24px ${M}`; y += 38; for (const l of wrap(x, c.sub, w, 2)) { text(l, P, y, x.font, "muted"); y += 32; } y -= 32; }
+    // the facts, two to a row; a wide one, or one too long for half the width, takes the whole row
+    let col = 0; y += 50;
     for (const r of c.rows) {
-      if (r.wide && col) { col = 0; y += 96; }
-      const cw = r.wide ? w : w / 2 - 20, ax = P + col * (w / 2 + 20);
-      x.fillStyle = v("muted"); x.font = `600 22px ${F}`; x.fillText(clip(x, r.k, cw), ax, y);
-      let vx = ax;
-      if (r.cc && /^[A-Z]{2}$/.test(r.cc)) { try { x.drawImage(await img(`/flags/${flagCode(r.cc)}.svg`), ax, y + 16, 40, 30); vx += 52; } catch (e) {} }
-      x.fillStyle = v("fg"); x.font = `600 30px ${r.mono ? M : F}`; x.fillText(clip(x, r.v, cw - (vx - ax)), vx, y + 42);
-      if (r.wide || col) { col = 0; y += 96; } else col = 1;
+      const flag = r.cc && /^[A-Z]{2}$/.test(r.cc) ? 52 : 0, vf = `600 30px ${r.mono ? M : F}`;
+      x.font = vf;
+      const wide = r.wide || x.measureText(r.v).width + flag > w / 2 - 20;
+      if (wide && col) { col = 0; y += 96; }
+      const cw = wide ? w : w / 2 - 20, ax = P + col * (w / 2 + 20);
+      x.font = `600 22px ${F}`;
+      const k = wrap(x, r.k, cw, 1)[0];   // labels are short; one too long is the last resort's to clip
+      text(k, ax, y, x.font, "muted");
+      if (flag && draw) { try { x.drawImage(await img(`/flags/${flagCode(r.cc)}.svg`), ax, y + 16, 40, 30); } catch (e) {} }
+      x.font = vf;
+      const ls = wrap(x, r.v, cw - flag, 2);
+      ls.forEach((l, i) => text(l, ax + flag, y + 42 + i * 38, vf, "fg"));
+      const extra = (ls.length - 1) * 38;
+      if (wide || col) { col = 0; y += 96 + extra; } else col = 1;
     }
+    return (col ? y + 96 : y) - 54;
   }
 
   // fill the live rows of a key–value list: data-r="<field>" → value
