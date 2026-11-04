@@ -78,8 +78,10 @@ async function lookup(env, o, ip) {
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*", "X-Content-Type-Options": "nosniff", ...extra },
 });
-async function getJSON(u, ms = 6000, headers = {}) {
-  const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json", ...headers }, cf: { cacheTtlByStatus: { "200-299": DAY, "404": 3600, "300-599": 0 }, cacheEverything: true }, signal: AbortSignal.timeout(ms) });
+// fresh: past Cloudflare's cache (what the caller keeps itself, like the RDAP records in cached() below)
+async function getJSON(u, ms = 6000, headers = {}, fresh = false) {
+  const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json", ...headers }, signal: AbortSignal.timeout(ms),
+    ...(fresh ? { cache: "no-store" } : { cf: { cacheTtlByStatus: { "200-299": DAY, "404": 3600, "300-599": 0 }, cacheEverything: true } }) });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
 }
@@ -125,7 +127,7 @@ async function rdap(rir, q) {
   let err;
   for (const base of new Set([RIRS[rir], RIRS.ARIN, "https://rdap.org/"].filter(Boolean))) {
     // a registry asking us to slow down (LACNIC: 429) would only be asked again through the redirects
-    try { return rdapPick(await getJSON(base + q, 4000, RDAP)); } catch (e) { err = e; if (/HTTP 429/.test(e.message)) break; }
+    try { return rdapPick(await getJSON(base + q, 4000, RDAP, true)); } catch (e) { err = e; if (/HTTP 429/.test(e.message)) break; }
   }
   throw err;
 }
