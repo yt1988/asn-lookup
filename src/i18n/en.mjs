@@ -83,6 +83,7 @@ export default {
   ip_none: "No network announces this address right now, so it usually can't be reached from the internet.",
   ip_private: "This is a private or reserved address (like the 192.168.x.x your router hands out). It only works inside a local network, so it has no owner on the internet.",
   ip_host: "{host} points to {ip}",
+  to_home: "Check your own IP and common networks →",
   ip_as_more: "All prefixes of {as} →",
   e_bad: "Enter an IP, an AS number or a domain, like 8.8.8.8, AS4134 or example.com.",
   e_dns: "That domain doesn't point to any IP. Check the spelling.",

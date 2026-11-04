@@ -83,6 +83,7 @@ export default {
   ip_none: "目前没有任何网络宣告这个地址，在公网上通常访问不到。",
   ip_private: "这是私有或保留地址（比如路由器分给你的 192.168.x.x），只在局域网里有效，在公网上没有归属可查。",
   ip_host: "{host} 解析到 {ip}",
+  to_home: "查我自己的 IP，看常用网络 →",
   ip_as_more: "{as} 的全部 IP 段 →",
   e_bad: "没认出来。请输入 IP、AS 号或域名，比如 8.8.8.8、AS4134、example.com。",
   e_dns: "这个域名查不到对应的 IP，检查一下拼写。",

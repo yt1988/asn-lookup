@@ -83,6 +83,7 @@ export default {
   ip_none: "Aucun réseau n'annonce cette adresse en ce moment : elle n'est donc généralement pas joignable depuis internet.",
   ip_private: "C'est une adresse privée ou réservée (comme les 192.168.x.x distribuées par votre box). Elle ne sert qu'à l'intérieur d'un réseau local et n'a donc pas de titulaire sur internet.",
   ip_host: "{host} pointe vers {ip}",
+  to_home: "Voir votre IP et les réseaux courants →",
   ip_as_more: "Tous les préfixes de {as} →",
   e_bad: "Saisissez une IP, un numéro AS ou un domaine, par exemple 8.8.8.8, AS4134 ou example.com.",
   e_dns: "Ce domaine ne pointe vers aucune IP. Vérifiez l'orthographe.",

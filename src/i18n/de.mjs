@@ -83,6 +83,7 @@ export default {
   ip_none: "Kein Netz kündigt diese Adresse derzeit an, deshalb ist sie aus dem Internet meist nicht erreichbar.",
   ip_private: "Das ist eine private oder reservierte Adresse (wie die 192.168.x.x, die dein Router vergibt). Sie gilt nur im lokalen Netz und hat deshalb keinen Inhaber im Internet.",
   ip_host: "{host} zeigt auf {ip}",
+  to_home: "Deine IP und bekannte Netze ansehen →",
   ip_as_more: "Alle Präfixe von {as} →",
   e_bad: "Gib eine IP, eine AS-Nummer oder eine Domain ein, z. B. 8.8.8.8, AS4134 oder example.com.",
   e_dns: "Diese Domain zeigt auf keine IP. Prüf die Schreibweise.",

@@ -83,6 +83,7 @@ export default {
   ip_none: "Nenhuma rede anuncia este endereço agora, então ele normalmente não pode ser acessado pela internet.",
   ip_private: "Este é um endereço privado ou reservado (como os 192.168.x.x que o seu roteador distribui). Ele só funciona dentro de uma rede local, então não tem dono na internet.",
   ip_host: "{host} aponta para {ip}",
+  to_home: "Ver seu IP e as redes conhecidas →",
   ip_as_more: "Todos os prefixos do {as} →",
   e_bad: "Digite um IP, um número AS ou um domínio, como 8.8.8.8, AS4134 ou example.com.",
   e_dns: "Esse domínio não aponta para nenhum IP. Confira se está escrito certo.",

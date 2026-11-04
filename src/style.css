@@ -45,6 +45,7 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .links a { color: var(--ink); text-decoration: none; }
 .links a:hover { text-decoration: underline; }
 /* a link to another 1ms.dog tool: the text, then the external-link icon */
+.home-l a.btn { color: var(--fg); text-decoration: none; }
 .links a.xt { display: inline-flex; align-items: center; gap: 3px; }
 .links a.xt svg { width: .95em; height: .95em; flex: none; }
 .me { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }

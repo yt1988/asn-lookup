@@ -34,6 +34,8 @@ const CJK_SP = /([぀-ヿ一-鿿]) (?=[぀-ヿ一-鿿])/g;
 const SKL ='<i class="skl"></i>';
 // after a link to another 1ms.dog tool (the site uses this icon for those, not an arrow)
 const EXT = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
+// an AS or address page shows that one result; the home page (the visitor's own IP, the common networks) is a click away
+const HOME_L = (T, home) => `<p class="home-l"><a class="btn sm" href="${home}">${esc(T("to_home"))}</a></p>`;
 const LISTED = 48;     // prefixes per family on the page; "show all" brings the rest
 const asLink = (home, asn, name, cc) => `<a class="asl" href="${home}AS${asn}"><b>AS${asn}</b>${name ? ` <span>${esc(name)}</span>` : ""}${cc ? " " + flag(cc) : ""}</a>`;
 
@@ -147,6 +149,7 @@ export function asPage({ T, lang, site, asn, rec, meta }) {
   </div>
   <p class="lead">${lead.trim()}</p>
   <div class="cols">${kv(rows)}<div>${kv(live)}</div></div>
+  ${HOME_L(T, home)}
 </section>
 ${routed ? `<section class="card nb"><h2>${esc(T("h_nb"))}</h2><div class="nbs">${nbCol("up")}${nbCol("down")}${nbCol("un")}</div><p class="note m">${esc(T("nb_note"))}</p></section>
 <section class="card pfxs">${pfxList(4, (rec.p4 || []).slice(0, LISTED), n4)}${pfxList(6, (rec.p6 || []).slice(0, LISTED), n6)}</section>` : ""}
@@ -189,6 +192,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
   <p class="lead">${hit.asn ? fill(T("ip_lead"), { as, name: esc(name) }).replace(CJK_SP, "$1") : esc(desc)}</p>
   ${rows.length || live.length ? `<div class="cols">${rows.length ? kv(rows) : ""}<div>${kv(live)}</div></div>` : ""}
   <p class="links">${hit.private ? "" : `<a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}${EXT}</a>`}${ip.includes(":") ? `<a class="xt" id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}${EXT}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
+  ${HOME_L(T, home)}
 </section>`;
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + "ip/" + ip, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];
   // the share card: the address, the AS announcing it, then the prefix, range and country
