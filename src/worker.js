@@ -79,7 +79,7 @@ const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(bod
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*", "X-Content-Type-Options": "nosniff", ...extra },
 });
 async function getJSON(u, ms = 6000, headers = {}) {
-  const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json", ...headers }, cf: { cacheTtl: DAY, cacheEverything: true }, signal: AbortSignal.timeout(ms) });
+  const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json", ...headers }, cf: { cacheTtlByStatus: { "200-299": DAY, "404": 3600, "300-599": 0 }, cacheEverything: true }, signal: AbortSignal.timeout(ms) });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
 }
