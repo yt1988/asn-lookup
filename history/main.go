@@ -190,6 +190,9 @@ type Meta struct {
 	RIS    string `json:"ris"`    // when RIS generated the dumps read
 	VRPAt  string `json:"vrp_at"` // when rpki-client built the VRPs read
 	Routes int    `json:"routes"` // announced (prefix, origin) pairs today
+	Added  int    `json:"added"`  // of them, not announced on the last run
+	Gone   int    `json:"gone"`   // announced on the last run, not today
+	Kept   int    `json:"kept"`   // intervals in the history (what the memory grows with)
 	VRPs   int    `json:"vrps"`
 	ASes   int    `json:"ases"` // AS files written
 	Took   string `json:"took"`
@@ -848,6 +851,7 @@ func main() {
 	anns = nil
 	runtime.GC()
 	count(s, today)
+	prev := s.LastRun
 	s.LastRun = today
 	check(os.MkdirAll(*stateDir, 0o755), "state")
 	check(save(path, s), "state")
@@ -855,14 +859,20 @@ func main() {
 	check(os.MkdirAll(*out, 0o755), "out")
 	ases, err := write(s, *out, today)
 	check(err, "AS files")
-	active := 0
+	active, added, gone := 0, 0, 0
 	for _, r := range s.Routes {
-		if r.Last == today {
+		switch {
+		case r.Last == today:
 			active++
+			if r.First == today && today != s.Since {
+				added++
+			}
+		case r.Last == prev:
+			gone++
 		}
 	}
 	m := Meta{Since: date(s.Since), Day: date(today), At: time.Now().UTC().Format(time.RFC3339), RIS: gen4, VRPAt: built,
-		Routes: active, VRPs: nVRP, ASes: ases, Took: time.Since(start).Round(time.Second).String(), PeakMB: peakMB()}
+		Routes: active, Added: added, Gone: gone, Kept: len(s.Routes), VRPs: nVRP, ASes: ases, Took: time.Since(start).Round(time.Second).String(), PeakMB: peakMB()}
 	b, _ := json.MarshalIndent(m, "", "  ")
 	check(atomic(filepath.Join(*out, "meta.json"), false, func(w io.Writer) error { _, err := w.Write(b); return err }), "meta")
 }

@@ -23,7 +23,8 @@ About 12 MB downloaded a day (the VRPs come gzipped).
 
 ```
 meta.json        since (the first day recorded), day (the last run), at, ris and vrp_at (when the sources were made),
-                 routes, vrps, ases, took, peak_mb
+                 routes (announced today), added and gone (since the last run), kept (intervals in the history:
+                 what the memory grows with), vrps, ases, took, peak_mb
 as/<asn>.json    one per AS with any history
 ```
 
