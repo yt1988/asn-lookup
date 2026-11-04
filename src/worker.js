@@ -8,6 +8,7 @@
 //   /api/rdap/as/<n>, /api/rdap/ip/<ip>, /api/nb/<n>
 //                               the live parts of a page: the registry's RDAP record (and reverse DNS), the neighbours
 //                               RIPE's route collectors see; cached for a day
+//   /api/hist/<n>               the AS's routing history (history/), cached until the next daily run
 // Pages are rendered into public/tpl/<lang>.html (the home page without its content), so every page has the same head,
 // header, help and scripts as the home page.
 import { STRINGS } from "./strings.mjs";
@@ -87,14 +88,14 @@ async function getJSON(u, ms = 6000, headers = {}, fresh = false) {
 }
 // a day in this data center's cache; an error, or a body marked [NOCACHE] (part of it missing), is answered but not kept
 const NOCACHE = Symbol("nocache");
-async function cached(request, ctx, make) {
+async function cached(request, ctx, make, ttl = DAY) {
   const key = new Request(new URL(request.url).toString(), { method: "GET" });
   const c = caches.default, hit = await c.match(key);
   if (hit) return hit;
   let body, ok = true;
   try { body = await make(); } catch (e) { ok = false; body = { error: String(e && e.message || e).slice(0, 80) }; }
   if (body && body[NOCACHE]) ok = false;
-  const res = json(body, 200, { "Cache-Control": ok ? `public, max-age=${DAY}` : "no-store" });
+  const res = json(body, 200, { "Cache-Control": ok ? `public, max-age=${ttl}` : "no-store" });
   if (ok) ctx.waitUntil(c.put(key, res.clone()));
   return res;
 }
@@ -151,6 +152,19 @@ async function neighbours(env, o, asn) {
   const out = { n: Object.fromEntries(Object.entries(by).map(([k, l]) => [k, l.length])) };
   for (const k in top) out[k] = top[k].map(n => { const [h, cc] = nm(n.asn); return [n.asn, h, cc, n.power]; });
   return out;
+}
+// The routing history of an AS (history/README.md), written once a day at 03:40 UTC by asn-history on the 1ms.dog
+// server; kept here until the next run's files are in (04:30 UTC). An AS with no history: {}. HISTORY_URL: where the
+// files are, "" for none (self-hosting without the server).
+const HISTORY = "https://data.1ms.dog:2083/asn/";
+async function history(env, asn) {
+  const base = env.HISTORY_URL ?? HISTORY;
+  if (!base) return {};
+  try { return await getJSON(`${base}as/${asn}.json`, 8000, {}, true); } catch (e) { if (/HTTP 404/.test(e.message)) return {}; throw e; }
+}
+function untilRun(now = Date.now()) {
+  const d = new Date(now), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 4, 30);
+  return Math.max(600, Math.round(((next > now ? next : next + DAY * 1000) - now) / 1000));
 }
 
 /* ---------- search ---------- */
@@ -245,6 +259,7 @@ export default {
       });
     }
     if ((m = /^\/api\/nb\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => neighbours(env, o, +m[1]));
+    if ((m = /^\/api\/hist\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => history(env, +m[1]), untilRun());
     if (p.startsWith("/api/")) return json({ error: "not found" }, 404);
 
     /* pages */

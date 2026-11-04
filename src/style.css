@@ -77,6 +77,35 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .nbl li:first-child { border-top: 0; }
 .nbl li:empty { border-top-color: transparent; }
 .note { font-size: 12px; }
+/* the routing history */
+.hist { padding: 18px 22px 20px; display: flex; flex-direction: column; gap: 16px; }
+.hcols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px 28px; }
+.spark svg { display: block; width: 100%; height: 64px; overflow: visible; }
+.spark path { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.spark .l4 { stroke: var(--ink); }
+.spark .l6 { stroke: var(--muted); stroke-dasharray: 4 3; }
+.ax { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; margin-top: 6px; }
+.ax i { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin: 0 4px 0 8px; }
+.ax .k4 { background: var(--ink); }
+.ax .k6 { background: var(--muted); }
+.rp { display: inline-block; padding: 0 7px; border-radius: 6px; font-size: 12px; line-height: 20px; font-weight: 600; background: var(--soft); color: var(--fg); }
+.rp-i { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.rp-n { color: var(--muted); font-weight: 500; }
+.evl, .hl { list-style: none; margin: 0; padding: 0; }
+.evl { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0 28px; }
+.evl li { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 4px 0; font-size: 13px; border-top: 1px solid var(--line); }
+.evl li time { flex: none; font-size: 12px; min-width: 7.5em; }
+.evl li a { text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evl li a:hover, .hl a:hover { color: var(--ink); text-decoration: underline; }
+.evl li > .m:last-child { margin-left: auto; font-size: 12px; white-space: nowrap; }
+.ev { flex: none; width: 1em; text-align: center; font-weight: 700; }
+.ev1 { color: var(--ink); }
+.ev0 { color: var(--muted); }
+.hflag { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; }
+.hflag:empty { display: none; }
+.hl li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 4px 0; font-size: 13px; border-top: 1px solid var(--line); }
+.hl li:first-child, .evl li:first-child { border-top: 0; }
+.hl a.mono { text-decoration: none; }
 .ext { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; padding: 0 4px; }
 .ext a { color: var(--ink); text-decoration: none; }
 .ext a:hover { text-decoration: underline; }
@@ -114,11 +143,12 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 }
 @media (prefers-reduced-motion: reduce) { .skl { animation: none !important; } .toast { transition: none !important; } }
 @media (max-width: 860px) {
-  .pfxs, .nbs { grid-template-columns: minmax(0, 1fr); }
+  .pfxs, .nbs, .hcols { grid-template-columns: minmax(0, 1fr); }
   .nbc + .nbc { margin-top: 14px; }
 }
 @media (max-width: 720px) {
-  .hero, .pop, .pfxs, .nb, .sib { padding: 16px; }
+  .hero, .pop, .pfxs, .nb, .sib, .hist { padding: 16px; }
+  .evl { grid-template-columns: minmax(0, 1fr); }
   .hero h1 { font-size: 20px; }
   /* the whole hint fits beside the button (a smaller hint doesn't make iOS zoom: the field's own size does) */
   .ask input::placeholder { font-size: 14px; }

@@ -1,0 +1,38 @@
+[Unit]
+Description=asn.1ms.dog routing history (RIS and RPKI, once a day)
+Documentation=https://github.com/yt1988/asn-lookup/tree/main/history
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=1ms-asn
+Group=1ms-asn
+ExecStart=/opt/1ms/asn/asn-history -state /var/lib/1ms-asn-history -out /srv/1ms-data/asn
+StateDirectory=1ms-asn-history
+# about 150 MB at most on its own (the second day of a 1.4-million-route history); the Go heap kept under 120 MiB
+Environment=GOMEMLIMIT=120MiB
+MemoryMax=200M
+TimeoutStartSec=40min
+Nice=10
+IOSchedulingClass=idle
+UMask=0022
+# only errors reach the journal; each run's figures are in meta.json
+StandardOutput=null
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ReadWritePaths=/srv/1ms-data/asn
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native

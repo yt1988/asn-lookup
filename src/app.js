@@ -135,6 +135,29 @@ import { regionName, flagCode } from "./region.mjs";
     return (col ? y + 96 : y) - 54;
   }
 
+  /* ---------- the routing history (history/README.md) ---------- */
+  const day = s => { try { return new Intl.DateTimeFormat(LANG, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(s + "T00:00:00Z")); } catch (e) { return s; } };
+  const rpkiTag = c => `<span class="rp rp-${c}">${esc(t("rpki_" + c))}</span>`;
+  // the prefix counts as two step lines (IPv4, and IPv6 when there is any), each scaled to its own range, from the first
+  // day recorded (or 400 days back) to the last run; before there are two days to draw, a line saying so
+  function spark(h) {
+    const D0 = s => Date.parse(s + "T00:00:00Z") / 864e5, end = D0(h.day), pts = h.n || [];
+    const start = Math.max(D0(h.since), end - 400);
+    if (end <= start || !pts.length) return `<p class="m">${esc(t("hist_new", { since: day(h.since) }))}</p>`;
+    const W = 600, H = 64, x = d => ((Math.max(d, start) - start) / (end - start)) * W;
+    const line = i => {
+      const v = pts.map(p => p[i]), lo = Math.min(...v), hi = Math.max(...v), y = n => hi === lo ? H / 2 : 4 + (1 - (n - lo) / (hi - lo)) * (H - 8);
+      let d = "";
+      pts.forEach((p, k) => { d += (k ? `H${x(D0(p[0])).toFixed(1)}V` : `M${x(D0(p[0])).toFixed(1)},`) + y(p[i]).toFixed(1); });
+      return d + `H${W}`;
+    };
+    const has6 = pts.some(p => p[2]);
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(t("hist_trend"))}">` +
+      (has6 ? `<path class="l6" d="${line(2)}"/>` : "") + `<path class="l4" d="${line(1)}"/></svg>` +
+      `<div class="ax m"><span>${esc(day(new Date(start * 864e5).toISOString().slice(0, 10)))}</span>` +
+      `<span><i class="k4"></i>IPv4${has6 ? ' <i class="k6"></i>IPv6' : ""}</span><span>${esc(day(h.day))}</span></div>`;
+  }
+
   // fill the live rows of a key–value list: data-r="<field>" → value
   const fillRows = (vals) => $$("[data-r]").forEach(li => { const v = vals[li.dataset.r]; li.querySelector("b").innerHTML = v ? v : NA; });
   const mail = e => e ? `<a href="mailto:${esc(e)}">${esc(e)}</a>` : "";
@@ -181,6 +204,25 @@ import { regionName, flagCode } from "./region.mjs";
       }
     }).catch(() => $$(".nbl").forEach(ol => { ol.innerHTML = `<li class="m">${esc(t("na"))}</li>` + "<li></li>".repeat(7); }));
 
+    // the routing history: prefix counts over time, RPKI, the latest prefixes started or stopped, the invalid ones and
+    // those other ASes announce too; the card stays hidden without it
+    if ($("#hist")) getJ(`/api/hist/${D.asn}`).then(h => {
+      if (!h || !h.since) return;
+      const px = Object.entries(h.px || {}), last = (h.n || []).slice(-1)[0];
+      $("#hN").textContent = last ? `IPv4 ${num(last[1])} · IPv6 ${num(last[2])}` : "";
+      $("#hSpark").innerHTML = spark(h);
+      $("#hRpki").innerHTML = [["v", 1], ["i", 2], ["n", 0]].map(([c, i]) => `<li><span>${rpkiTag(c)}</span><b>${num(h.rpki[i])}</b></li>`).join("");
+      $("#hEv").innerHTML = h.ev.length ? h.ev.slice(0, 12).map(([d, up, p]) =>
+        `<li><time class="m">${esc(day(d))}</time><span class="ev ev${up}">${up ? "+" : "−"}</span><a class="mono" href="${HOME}ip/${esc(p)}">${esc(p)}</a><span class="m">${esc(t(up ? "ev_up" : "ev_down"))}</span></li>`).join("")
+        : `<li class="m">${esc(t("hist_none", { since: day(h.since) }))}</li>`;
+      const block = (k, list, row) => list.length ? `<div><div class="sec-h"><span>${esc(t(k))}</span><span class="n">${num(list.length)}</span></div><ul class="hl">${list.slice(0, 24).map(row).join("")}</ul></div>` : "";
+      const pl = p => `<a class="mono" href="${HOME}ip/${esc(p)}">${esc(p)}</a>`;
+      $("#hFlag").innerHTML = block("hist_inv", px.filter(([, e]) => e[1] === "i"), ([p]) => `<li>${pl(p)}</li>`) +
+        block("hist_moas", px.filter(([, e]) => e[3] && e[3].length), ([p, e]) => `<li>${pl(p)}<span>${e[3].map(a => asLink(a)).join(" ")}</span></li>`);
+      $("#hNote").textContent = t("hist_note", { since: day(h.since) });
+      $("#hist").hidden = false;
+    }).catch(() => {});
+
     // the full prefix lists, asked once for "show all" or "copy all"
     let full = null;
     const all = () => full || (full = getJ(`/api/as/${D.asn}`).catch(e => { full = null; throw e; }));
@@ -205,6 +247,21 @@ import { regionName, flagCode } from "./region.mjs";
     // an IPv6 address: is the visitor's own network IPv6-ready (IPv6 Test)
     const v6 = meta("ipv6");
     if ($("#lnIpv6") && v6) Object.assign($("#lnIpv6"), { href: v6 + HOME, hidden: false });
+    // one address: can the world reach it (Reach Check, the address filled in, started by the visitor)
+    const reach = meta("reach");
+    if ($("#lnReach") && reach) Object.assign($("#lnReach"), { href: `${reach}${HOME}?t=${encodeURIComponent(ip)}`, hidden: false });
+    // the announced prefix's history: its RPKI state, since when it is announced, other ASes announcing it now or before
+    const hRow = (k, v) => { const li = $(`[data-h="${k}"]`); if (li) li.querySelector("b").innerHTML = v; };
+    const hGone = () => $$("[data-h]").forEach(li => li.remove());
+    if (D.asn && D.pfx) getJ(`/api/hist/${D.asn}`).then(h => {
+      const e = h && h.px && h.px[D.pfx];
+      if (!e) return hGone();
+      hRow("rpki", rpkiTag(e[1]) + (e[2] > h.since ? ` <span class="m">${esc(t("since_d", { date: day(e[2]) }))}</span>` : ""));
+      hRow("seen", esc(e[0] > h.since ? day(e[0]) : t("seen_before", { date: day(h.since) })));
+      const ul = $('[data-h="seen"]').parentNode, add = (k, v) => ul.insertAdjacentHTML("beforeend", `<li><span>${esc(t(k))}</span><b>${v}</b></li>`);
+      if (e[3] && e[3].length) add("k_moas", e[3].map(a => asLink(a)).join(" "));
+      if (e[4] && e[4].length) add("k_was", e[4].map(([a, f, l]) => `${asLink(a)} <span class="m">${esc(day(f))} – ${esc(day(l))}</span>`).join("<br>"));
+    }).catch(hGone);
     // ?v=2: past the empty records the edge cached while ARIN failed (2026-11), kept a day under the old address
     if (D.live) getJ(`/api/rdap/ip/${encodeURIComponent(ip)}?v=2`).then(r => fillRows({
       net: r.name ? esc(r.name) + (r.range ? `<span class="m mono"> · ${esc(r.range)}</span>` : "") : "",

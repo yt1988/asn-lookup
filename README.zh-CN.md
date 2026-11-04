@@ -20,8 +20,8 @@
 
 ## 能看到什么
 
-- **任意 IP 或前缀**（`/ip/8.8.8.8`、`/ip/1.0.0.0/24`）：宣告它的 AS、所在的宣告前缀、地址范围、国家/地区；注册机构的 RDAP 记录（网络名称、组织、滥用投诉邮箱）和反向解析。
-- **任意 AS**（`/AS4134`）：名称、持有者、国家/地区、注册机构和分配日期；宣告的前缀数量和地址数；全部前缀列表（可一键复制，用于防火墙或分流规则）；RIPE 采集器看到的上游、下游和对等；同一机构名下的其他 ASN。
+- **任意 IP 或前缀**（`/ip/8.8.8.8`、`/ip/1.0.0.0/24`）：宣告它的 AS、所在的宣告前缀、地址范围、国家/地区；注册机构的 RDAP 记录（网络名称、组织、滥用投诉邮箱）和反向解析；这个前缀的 RPKI 状态、从哪天开始宣告、现在或以前还有哪些 AS 宣告它。还有一个去 [Reach Check](https://reach.1ms.dog/) 的链接，测试世界各地能不能连上它。
+- **任意 AS**（`/AS4134`）：名称、持有者、国家/地区、注册机构和分配日期；宣告的前缀数量和地址数；全部前缀列表（可一键复制，用于防火墙或分流规则）；RIPE 采集器看到的上游、下游和对等；同一机构名下的其他 ASN；路由历史：前缀数量的变化、RPKI 有效 / 无效 / 没有 ROA、最近开始或停止宣告的前缀，以及其他 AS 也在宣告的前缀。
 - **域名**：搜索框里输入域名，先解析成 IP 再查。
 - **你自己的 IP**：首页直接显示本机出口所在的 AS 和前缀。
 
@@ -37,6 +37,7 @@
 | 五大 RIR 的 delegated-extended 文件 | 分配机构、分配日期，以及同一持有者的 AS 号 | 构建时 |
 | RDAP（经 rdap.arin.net 跳转到对应 RIR） | 注册组织、滥用投诉邮箱、更新日期 | 打开页面时，缓存一天 |
 | [RIPEstat](https://stat.ripe.net/) asn-neighbours | 上游、下游、对等 | 打开页面时，缓存一天 |
+| RIPE RIS 和 [rpki-client](https://www.rpki-client.org/) 的 VRP，由 1ms.dog 服务器上的 [history/](history/) 每天记一次 | 路由历史、RPKI | 每天一次（UTC 03:40） |
 | Cloudflare / Google DNS over HTTPS | 反向解析、域名解析 | 实时 |
 
 `npm run data` 下载上面的文件，在 `public/data/` 生成分片（不提交到仓库）：
@@ -84,7 +85,7 @@ SITE_URL=https://asn.example.com npm run data
 SITE_URL=https://asn.example.com npm run build
 ```
 
-并在 `wrangler.toml` 的 `[vars]` 里设置同样的 `SITE_URL`。
+并在 `wrangler.toml` 的 `[vars]` 里设置同样的 `SITE_URL`。路由历史来自 asn.1ms.dog 的服务器；不要它就设 `HISTORY_URL = ""`，也可以自己跑 [history/](history/)，把 `HISTORY_URL` 指向它的文件。
 
 **数据每天更新**：`.github/workflows/refresh.yml` 每天提交一次 `data.stamp`，推送会触发 Cloudflare Workers Builds 重新构建（构建命令 `npm ci && npm run data && npm test`）。不用 Workers Builds 的话，定时运行 `npm run data && npx wrangler deploy` 即可。
 

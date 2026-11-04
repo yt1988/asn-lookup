@@ -34,7 +34,7 @@ test("every key the code asks for exists", async () => {
     ...all(app, /\bt\("(\w+)"[),]/g), ...all(render, /\bT\("(\w+)"\)/g), ...all(worker, /\bT\("(\w+)"\)/g),   // t("th_" + x) and the like: below
     ...all(page, /data-i="(\w+)"/g), ...all(page, /\{\{a:(\w+)\}\}/g),
     ...["system", "light", "dark"].map(x => "th_" + x), ...["cn", "cloud", "intl"].map(x => "g_" + x),
-    ...["up", "down", "un"].map(x => "nb_" + x), "h_pfx4", "h_pfx6",
+    ...["up", "down", "un"].map(x => "nb_" + x), "h_pfx4", "h_pfx6", ...["v", "i", "n"].map(x => "rpki_" + x),
   ]);
   for (const k of keys) assert.ok(k in STRINGS.en, `en lacks ${k}`);
 });

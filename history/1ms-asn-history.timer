@@ -1,0 +1,9 @@
+[Unit]
+Description=asn.1ms.dog routing history, daily at 03:40 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

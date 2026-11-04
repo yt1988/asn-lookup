@@ -2,7 +2,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Who owns this IP? Who is AS4134? [ASN Lookup](https://asn.1ms.dog) gives every IP address and every AS number a page: the AS announcing it, the prefix holding it, the registry record, and for each AS every IPv4 and IPv6 prefix, its upstreams and downstreams, and the other ASNs of the same holder.
+Who owns this IP? Who is AS4134? [ASN Lookup](https://asn.1ms.dog) gives every IP address and every AS number a page: the AS announcing it, the prefix holding it, the registry record, and for each AS every IPv4 and IPv6 prefix, its upstreams and downstreams, and the other ASNs of the same holder; its routing history: prefix counts over time, RPKI valid / invalid / no ROA, the latest prefixes it started or stopped announcing, and prefixes other ASes announce too.
 
 **Use it:** https://asn.1ms.dog
 
@@ -20,7 +20,7 @@ Who owns this IP? Who is AS4134? [ASN Lookup](https://asn.1ms.dog) gives every I
 
 ## What you get
 
-- **Any IP or prefix** (`/ip/8.8.8.8`, `/ip/1.0.0.0/24`): the AS announcing it, the announced prefix holding it, the range, the country; the registry's RDAP record (network name, organization, abuse e-mail) and reverse DNS.
+- **Any IP or prefix** (`/ip/8.8.8.8`, `/ip/1.0.0.0/24`): the AS announcing it, the announced prefix holding it, the range, the country; the registry's RDAP record (network name, organization, abuse e-mail) and reverse DNS; the prefix's RPKI state, since when it is announced and other ASes announcing it now or before. A link to [Reach Check](https://reach.1ms.dog/) tests whether it can be reached from around the world.
 - **Any AS** (`/AS4134`): name, holder, country, registry and allocation date; how many prefixes and addresses it announces; every prefix (copy them all in one click, for a firewall or proxy rules); the upstreams, downstreams and peers RIPE's collectors see; other ASNs of the same holder.
 - **A domain**: type it in the search box and it is resolved, then looked up.
 - **Your own IP**: the home page shows the AS and prefix of your connection.
@@ -37,6 +37,7 @@ Every AS page is rendered on the server, complete in the HTML, in 10 languages, 
 | The five RIRs' delegated-extended files | registry, allocation date, and AS numbers of the same holder | at build |
 | RDAP (rdap.arin.net, redirecting to the right RIR) | organization, abuse e-mail, last change | when a page opens, cached a day |
 | [RIPEstat](https://stat.ripe.net/) asn-neighbours | upstreams, downstreams, peers | when a page opens, cached a day |
+| RIPE RIS and [rpki-client](https://www.rpki-client.org/)'s VRPs, kept day by day by [history/](history/) on the 1ms.dog server | routing history, RPKI | once a day (03:40 UTC) |
 | Cloudflare / Google DNS over HTTPS | reverse DNS, domains | live |
 
 `npm run data` downloads the files above and writes shards to `public/data/` (not committed):
@@ -84,7 +85,7 @@ SITE_URL=https://asn.example.com npm run data
 SITE_URL=https://asn.example.com npm run build
 ```
 
-and set the same `SITE_URL` under `[vars]` in `wrangler.toml`.
+and set the same `SITE_URL` under `[vars]` in `wrangler.toml`. The routing history comes from asn.1ms.dog's server; set `HISTORY_URL = ""` to leave it out, or run [history/](history/) yourself and point `HISTORY_URL` at its files.
 
 **Daily data**: `.github/workflows/refresh.yml` commits `data.stamp` once a day, and the push makes Cloudflare Workers Builds rebuild (build command `npm ci && npm run data && npm test`). Without Workers Builds, run `npm run data && npx wrangler deploy` on a schedule.
 
