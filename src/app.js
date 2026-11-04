@@ -205,7 +205,8 @@ import { regionName, flagCode } from "./region.mjs";
     // an IPv6 address: is the visitor's own network IPv6-ready (IPv6 Test)
     const v6 = meta("ipv6");
     if ($("#lnIpv6") && v6) Object.assign($("#lnIpv6"), { href: v6 + HOME, hidden: false });
-    if (D.live) getJ(`/api/rdap/ip/${encodeURIComponent(ip)}`).then(r => fillRows({
+    // ?v=2: past the empty records the edge cached while ARIN failed (2026-11), kept a day under the old address
+    if (D.live) getJ(`/api/rdap/ip/${encodeURIComponent(ip)}?v=2`).then(r => fillRows({
       net: r.name ? esc(r.name) + (r.range ? `<span class="m mono"> · ${esc(r.range)}</span>` : "") : "",
       org: r.org ? esc(r.org) + (r.cc ? " " + flag(r.cc) : "") : "", ptr: r.ptr ? `<span class="mono">${esc(r.ptr)}</span>` : "", abuse: mail(r.abuse),
     })).catch(() => fillRows({}));
