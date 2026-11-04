@@ -124,7 +124,8 @@ const RIRS = { ARIN: "https://rdap.arin.net/registry/", APNIC: "https://rdap.apn
 async function rdap(rir, q) {
   let err;
   for (const base of new Set([RIRS[rir], RIRS.ARIN, "https://rdap.org/"].filter(Boolean))) {
-    try { return rdapPick(await getJSON(base + q, 4000, RDAP)); } catch (e) { err = e; }
+    // a registry asking us to slow down (LACNIC: 429) would only be asked again through the redirects
+    try { return rdapPick(await getJSON(base + q, 4000, RDAP)); } catch (e) { err = e; if (/HTTP 429/.test(e.message)) break; }
   }
   throw err;
 }
