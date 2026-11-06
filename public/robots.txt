@@ -1,4 +1,5 @@
 User-agent: ClaudeBot
+User-agent: Claude-SearchBot
 Disallow: /
 
 User-agent: *
