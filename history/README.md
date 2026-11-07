@@ -1,12 +1,12 @@
 # asn-history
 
-The routing history behind asn.1ms.dog: once a day it reads who announces what, as RIPE NCC's route collectors see it,
+The routing history behind ASN Lookup: once a day it reads who announces what, as RIPE NCC's route collectors see it,
 and the RPKI ROAs, compares them with the last run and keeps only the changes. The AS and address pages show what it
 writes: since when a prefix is announced, its RPKI state and since when, other ASes announcing it now or before, the
 latest prefixes an AS started or stopped announcing, and its prefix counts over the last 400 days.
 
-It runs on the 1ms.dog server (a VPS in Tokyo): it needs a disk that keeps yesterday, which a Workers build doesn't
-have, and RIPEstat's own history is too large to ask live (AS4134: 38 MB, 52 seconds).
+It runs on a machine with a disk, apart from the Worker: it needs to keep yesterday, which a Workers build can't. Why,
+and what was measured: [docs/history.md](../docs/history.md).
 
 ## Sources
 
@@ -19,7 +19,7 @@ About 12 MB downloaded a day (the VRPs come gzipped).
 
 ## What it writes
 
-`-out` (on the server `/srv/1ms-data/asn/`, published read-only at `https://data.1ms.dog:2083/asn/`):
+`-out` (published read-only over HTTPS; the Worker's `HISTORY_URL` points at it):
 
 ```
 meta.json        since (the first day recorded), day (the last run), at, ris and vrp_at (when the sources were made),
@@ -48,25 +48,14 @@ An AS file, every date `YYYY-MM-DD`:
 
 ## State
 
-`-state` (on the server `/var/lib/1ms-asn-history/state.gob.gz`, about 15 MB): every (prefix, origin) as intervals of
+`-state/state.bin.gz` (about 5 MB, the only copy of the history: back it up): every (prefix, origin) as intervals of
 days, its RPKI state and since when, and the count points. A route gone for two years and count points older than 400
 days are dropped. Every file is written to a temporary name and renamed over the old one.
 
-## On the server
+## Build and run
 
-Assigned in 1ms-shell `docs/processes.md` ("专用服务器"): user `1ms-asn`, binary in `/opt/1ms/asn/`, service
-`1ms-asn-history` (oneshot, `MemoryMax=200M`), timer at 03:40 UTC. Only errors are logged; each run's figures are in
-`meta.json`.
-
-```sh
-# build (anywhere with Go), then upload asn-history and the two units with sftp
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o asn-history .
-install -m 755 asn-history /opt/1ms/asn/asn-history
-cp 1ms-asn-history.service 1ms-asn-history.timer /etc/systemd/system/ && systemctl daemon-reload
-systemctl enable --now 1ms-asn-history.timer
-systemctl start 1ms-asn-history     # a run now
-cat /srv/1ms-data/asn/meta.json
-```
+Building, installing it as a systemd service and timer, and verifying it: [AGENTS.md](../AGENTS.md), "The routing
+history, self-hosted". Only errors are logged; each run's figures are in `meta.json`.
 
 To try it on any machine: `go run . -state ./st -out ./out` (or `-ris4`, `-ris6`, `-vrp` with local files, and `-day
 YYYY-MM-DD` to play several days).
