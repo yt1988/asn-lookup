@@ -1,0 +1,43 @@
+# The routing history program (history/): when a change to it lands on main, vet it, build a static linux/amd64 binary
+# and publish it as a GitHub Release named server-<short commit>, marked latest, with SHA256SUMS, so that
+# https://github.com/<repo>/releases/latest/download/asn-history is always the newest. The daily data commits
+# (refresh.yml) touch only data.stamp and don't run this. Nothing here deploys or holds any key.
+name: history release
+on:
+  push:
+    branches: [main]
+    paths: ["history/**", ".github/workflows/history.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: history-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: history/go.mod
+          cache: false
+      - name: Vet and build
+        working-directory: history
+        run: |
+          go vet .
+          mkdir -p ../out
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../out/asn-history .
+          cd ../out && sha256sum asn-history > SHA256SUMS && cat SHA256SUMS && ls -l
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="server-${GITHUB_SHA::7}"
+          notes="asn-history (history/) at ${GITHUB_SHA}: linux/amd64, static (CGO_ENABLED=0, -trimpath -ldflags=\"-s -w\"). Check it with: sha256sum -c SHA256SUMS"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" out/asn-history out/SHA256SUMS --clobber
+            gh release edit "$tag" --latest
+          else
+            gh release create "$tag" out/asn-history out/SHA256SUMS --target "$GITHUB_SHA" --title "asn-history $tag" --notes "$notes" --latest
+          fi

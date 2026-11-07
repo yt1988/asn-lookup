@@ -61,8 +61,8 @@ HISTORY_URL:http://127.0.0.1:<port>/`.
   and the same `SITE_URL` under `[vars]` in `wrangler.toml`.
 - **Daily data**: `.github/workflows/refresh.yml` commits `data.stamp` once a day, and the push rebuilds the site.
   Without Workers Builds, run `npm run data && npx wrangler deploy` on a schedule.
-- **The routing history**: by hand, as below; a push doesn't deploy it. Set `HISTORY_URL = ""` under `[vars]` to
-  leave it out.
+- **The routing history**: by hand, as below; a push doesn't deploy it, it only publishes a new Release of the
+  program when `history/` changed. Set `HISTORY_URL = ""` under `[vars]` to leave it out.
 
 ## The routing history, self-hosted
 
@@ -74,12 +74,22 @@ directory read-only over HTTPS (any web server; the Worker fetches the files and
    useradd --system --no-create-home --shell /usr/sbin/nologin <user>
    mkdir -p /opt/<app> /srv/<data-dir> && chown <user>: /srv/<data-dir>
    ```
-2. **Build** (anywhere with Go; the machine needs no compiler)
+2. **The program**: download the published one (no Go needed), on the machine:
+   ```bash
+   cd /tmp
+   curl -fLO https://github.com/yt1988/asn-lookup/releases/latest/download/asn-history
+   curl -fLO https://github.com/yt1988/asn-lookup/releases/latest/download/SHA256SUMS
+   sha256sum -c SHA256SUMS            # must print "asn-history: OK"
+   install -o root -g root -m 755 asn-history /opt/<app>/asn-history
+   ```
+   Every change to `history/` that lands on `main` is built by `.github/workflows/history.yml` (static linux/amd64,
+   `CGO_ENABLED=0 -trimpath -ldflags="-s -w"`) and published as the Release `server-<short commit>`, marked latest; an
+   older one is at `releases/download/server-<short commit>/asn-history`. Or build it yourself, anywhere with Go:
    ```bash
    cd history
    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o asn-history .
    ```
-   Upload it to `/opt/<app>/asn-history`, owned by root, mode 755.
+   and upload it to `/opt/<app>/asn-history`, owned by root, mode 755.
 3. **The service and timer**: `history/1ms-asn-history.service` and `.timer` are 1ms.dog's; copy them under your own
    names and change `User`, `Group`, the paths in `ExecStart` and `ReadWritePaths`. Keep `MemoryMax=200M`,
    `GOMEMLIMIT=120MiB` and `StandardOutput=null` (only errors reach the journal). The timer's time must be before
