@@ -20,6 +20,9 @@ import { regionName, flagCode } from "./region.mjs";
   const getJ = (u, ms = 9000) => fetch(u, { credentials: "omit", signal: AbortSignal.timeout(ms) }).then(r => r.ok ? r.json() : Promise.reject(new Error(r.status)));
   const asLink = (a, name, cc) => `<a class="asl" href="${HOME}AS${a}"><b>AS${a}</b>${name ? ` <span>${esc(name)}</span>` : ""}${cc ? " " + flag(cc) : ""}</a>`;
   const NA = `<span class="m">${esc(t("na"))}</span>`;
+  // what the page looked up and fetched as it ran, kept for the report dialog at the end (1ms-shell docs/tool-contract.md,
+  // "报告问题"): the visitor's own address and the one they looked up are masked there
+  const live = {};
 
   /* ---------- theme and language (synced across the 1ms.dog tools) ---------- */
   const thBtn = $("#theme"), TH = ["system", "light", "dark"];
@@ -169,6 +172,7 @@ import { regionName, flagCode } from "./region.mjs";
   if (D.page === "home") {
     const row = (s, v) => { $(s + " b").innerHTML = v || NA; };
     const show = (me, hit) => {
+      live.me = me; live.hit = hit;
       const asn = me.asn || (hit && hit.asn), same = hit && hit.asn === asn;
       row("#meIp", `<a class="mono" href="${HOME}ip/${esc(me.ip)}">${esc(me.ip)}</a>`);
       row("#meAs", asn && asLink(asn, knownName(asn, LANG) || me.org || (same && hit.name), same && hit.cc));
@@ -193,8 +197,9 @@ import { regionName, flagCode } from "./region.mjs";
 
   /* ---------- an AS ---------- */
   if (D.page === "as" && D.asn != null) {
-    getJ(`/api/rdap/as/${D.asn}`).then(r => fillRows({ org: esc(r.org || r.name), abuse: mail(r.abuse), upd: esc(r.upd || r.reg) })).catch(() => fillRows({}));
+    getJ(`/api/rdap/as/${D.asn}`).then(r => { live.rdap = r; fillRows({ org: esc(r.org || r.name), abuse: mail(r.abuse), upd: esc(r.upd || r.reg) }); }).catch(() => fillRows({}));
     if ($(".nb")) getJ(`/api/nb/${D.asn}`, 15000).then(r => {
+      live.nb = r;
       for (const k of ["up", "down", "un"]) {
         const col = $(`[data-nb="${k}"]`), list = r[k] || [];
         col.querySelector(".n").textContent = r.n && r.n[k] ? num(r.n[k]) : "";
@@ -208,6 +213,7 @@ import { regionName, flagCode } from "./region.mjs";
     // those other ASes announce too; the card stays hidden without it
     if ($("#hist")) getJ(`/api/hist/${D.asn}`).then(h => {
       if (!h || !h.since) return;
+      live.hist = h;
       const px = Object.entries(h.px || {}), last = (h.n || []).slice(-1)[0];
       $("#hN").textContent = last ? `IPv4 ${num(last[1])} · IPv6 ${num(last[2])}` : "";
       $("#hSpark").innerHTML = spark(h);
@@ -256,6 +262,7 @@ import { regionName, flagCode } from "./region.mjs";
     if (D.asn && D.pfx) getJ(`/api/hist/${D.asn}`).then(h => {
       const e = h && h.px && h.px[D.pfx];
       if (!e) return hGone();
+      live.hist = h; live.hpx = e;
       hRow("rpki", rpkiTag(e[1]) + (e[2] > h.since ? ` <span class="m">${esc(t("since_d", { date: day(e[2]) }))}</span>` : ""));
       hRow("seen", esc(e[0] > h.since ? day(e[0]) : t("seen_before", { date: day(h.since) })));
       const ul = $('[data-h="seen"]').parentNode, add = (k, v) => ul.insertAdjacentHTML("beforeend", `<li><span>${esc(t(k))}</span><b>${v}</b></li>`);
@@ -263,9 +270,89 @@ import { regionName, flagCode } from "./region.mjs";
       if (e[4] && e[4].length) add("k_was", e[4].map(([a, f, l]) => `${asLink(a)} <span class="m">${esc(day(f))} – ${esc(day(l))}</span>`).join("<br>"));
     }).catch(hGone);
     // ?v=2: past the empty records the edge cached while ARIN failed (2026-11), kept a day under the old address
-    if (D.live) getJ(`/api/rdap/ip/${encodeURIComponent(ip)}?v=2`).then(r => fillRows({
+    if (D.live) getJ(`/api/rdap/ip/${encodeURIComponent(ip)}?v=2`).then(r => { live.rdap = r; fillRows({
       net: r.name ? esc(r.name) + (r.range ? `<span class="m mono"> · ${esc(r.range)}</span>` : "") : "",
       org: r.org ? esc(r.org) + (r.cc ? " " + flag(r.cc) : "") : "", ptr: r.ptr ? `<span class="mono">${esc(r.ptr)}</span>` : "", abuse: mail(r.abuse),
-    })).catch(() => fillRows({}));
+    }); }).catch(() => fillRows({}));
   }
+
+  /* ---------- reporting a problem (the host's dialog; 1ms-shell docs/tool-contract.md, "报告问题") ---------- */
+  // The dialog calls this when it opens and shows the answer folded under "This result": a line saying what was looked
+  // up, the values as JSON (6 KB at most), and the readings as one-tap answers. It is what the page shows — the AS and
+  // its registry record, the prefixes it lists, the neighbours, the routing history; or the address, its network and
+  // reverse DNS — with no whole address in it: the visitor's own and the one they looked up are masked, as on a shared
+  // link, and nothing a share dialog keeps back by default is included.
+  const maskIp = ip => !ip ? "" : ip.indexOf(":") >= 0 ? ip.split(":").slice(0, 2).join(":") + ":…" : ip.split(".").slice(0, 2).join(".") + ".•.•";
+  const RS = /^(zh|ja)/.test(LANG) ? "：" : ": ";
+  // the total under a family's heading (the page's own count, not the number of rows it lists), and the rows it lists
+  const pCount = f => { const el = $(`.pfx[data-f="${f}"] .sec-h .n`); return el ? +el.textContent.replace(/\D/g, "") || 0 : 0; };
+  const pList = (f, n) => $$(`.pfx[data-f="${f}"] .plist a`).slice(0, n).map(a => a.textContent.trim());
+  // the neighbours as the page draws them: the three busiest of each column, "AS<number> <name>"
+  const nbPack = r => { const out = {}; for (const k of ["up", "down", "un"]) { const l = (r[k] || []).slice(0, 3).map(x => "AS" + x[0] + (x[1] ? " " + x[1] : "")); if (l.length) out[k] = l; } return out; };
+  // the history's line at a glance: when the records began, the last day's counts, the RPKI split and the last changes
+  const histPack = h => ({ since: h.since, day: h.day, rpki: h.rpki,
+    ...((h.n || []).length ? { last: h.n[h.n.length - 1] } : {}), ...((h.ev || []).length ? { ev: h.ev.slice(-3) } : {}) });
+
+  window.msReport = () => {
+    const picks = [], pick = (k, v) => { if (v && v !== "–") picks.push((t(k) + RS + v).slice(0, 60)); };
+
+    // the visitor's own address (home): masked, the country without the city
+    if (D.page === "home") {
+      const me = live.me;
+      if (!me || !me.ip) return null;
+      const hit = live.hit || {}, asn = me.asn || hit.asn || null,
+        name = asn ? knownName(asn, LANG) || hit.holder || me.org || "" : "", ip = maskIp(me.ip),
+        as = asn ? "AS" + asn + (name ? " " + name : "") : "";
+      const summary = [ip, as, hit.prefix || ""].filter(Boolean).join(" · ").slice(0, 300);
+      const data = { p: "home", ip, ...(asn ? { asn } : {}), ...(name ? { name } : {}),
+        ...(hit.prefix ? { pfx: hit.prefix } : {}), ...(me.country ? { cc: me.country } : {}), ...(me.org ? { org: me.org } : {}) };
+      pick("k_ip", ip); pick("k_as", as); pick("k_pfx", hit.prefix); pick("k_loc", me.country ? country(me.country) : ""); pick("k_org", me.org);
+      return { summary, data, picks };
+    }
+
+    // an AS: who holds it (our data and the registry's live record), what it announces, what it is connected to
+    if (D.page === "as" && D.asn != null) {
+      const c = D.card || {}, row = i => (c.rows || [])[i] || {}, r = live.rdap || {}, as = "AS" + D.asn;
+      const routed = !!$(".pfx"), name = c.name || "", cc = row(0).v || "", rir = row(1).v || "";
+      const n4 = pCount("4"), n6 = pCount("6"), p4 = pList("4", 8), p6 = pList("6", 4);
+      const summary = [as, name, cc, rir, routed ? t("h_pfx4") + " " + num(n4) + " · " + t("h_pfx6") + " " + num(n6) : ""]
+        .filter(Boolean).join(" · ").slice(0, 300);
+      const data = { p: "as", asn: D.asn, ...(name ? { name } : {}), ...(c.sub ? { holder: c.sub } : {}),
+        ...(row(0).cc ? { cc: row(0).cc } : {}), ...(rir ? { rir } : {}), ...(D.x ? { truncated: 1 } : {}) };
+      if (routed) { data.n4 = n4; data.n6 = n6; }
+      if (r.org) data.org = r.org;
+      if (r.abuse) data.abuse = r.abuse;
+      if (r.upd) data.upd = r.upd;
+      if (p4.length) data.p4 = p4;
+      if (p6.length) data.p6 = p6;
+      if (live.nb) data.nb = nbPack(live.nb);
+      if (live.hist) data.hist = histPack(live.hist);
+      pick("k_as", as); pick("k_name", name); pick("k_cc", cc); pick("k_org", r.org); pick("k_rir", rir);
+      if (routed) { pick("h_pfx4", num(n4)); pick("h_pfx6", num(n6)); }
+      if (live.hist && live.hist.since) pick("h_hist", day(live.hist.since));
+      return { summary, data, picks };
+    }
+
+    // an address: the AS announcing it, the prefix holding it and the live record (the address itself masked)
+    if (D.page === "ip") {
+      const c = D.card || {}, row = i => (c.rows || [])[i] || {}, r = live.rdap || {}, e = live.hpx;
+      const ip = (D.ip || "").indexOf("/") >= 0 ? D.ip : maskIp(D.ip || ""), asn = D.asn || null, as = asn ? "AS" + asn : "";
+      const nm = asn && c.name ? String(c.name).split(" · ").slice(1).join(" · ").trim() : "", name = nm || "";
+      const summary = [ip, as, name, D.pfx || "", r.org || ""].filter(Boolean).join(" · ").slice(0, 300);
+      const data = { p: "ip", ip, ...(D.pfx ? { pfx: D.pfx } : {}) };
+      if (asn) data.asn = asn;
+      if (name) data.name = name;
+      if (row(1).cc) data.cc = row(1).cc;
+      if (r.name) data.net = r.name;
+      if (r.org) data.org = r.org;
+      if (r.ptr) data.ptr = r.ptr;
+      if (r.abuse) data.abuse = r.abuse;
+      if (e) data.hist = { since: live.hist.since, day: live.hist.day, rpki: e[1], first: e[0] };
+      pick("k_pfx", D.pfx); pick("k_as", as); pick("k_ascc", row(1).v); pick("k_net", r.name);
+      pick("k_org", r.org); pick("k_ptr", r.ptr);
+      if (e) { pick("k_rpki", t("rpki_" + e[1])); pick("k_seen", day(e[0])); }
+      return { summary, data, picks };
+    }
+    return null;
+  };
 })();
