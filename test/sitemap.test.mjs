@@ -1,0 +1,27 @@
+// The sitemaps a data build writes (npm run data): every AS with a page is listed in every language, not only the
+// announced ones (1ms-shell#99). Skipped when public/data/ is not built, as on a bare checkout.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFile, readdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { LANGS } from "../src/langs.mjs";
+
+const pub = new URL("../public/", import.meta.url);
+const built = existsSync(new URL("data/meta.json", pub)) && existsSync(new URL("sitemaps/", pub));
+
+test("every AS with a page is in the sitemaps of every language", { skip: built ? false : "run npm run data first" }, async () => {
+  const meta = JSON.parse(await readFile(new URL("data/meta.json", pub), "utf8"));
+  const files = (await readdir(new URL("sitemaps/", pub))).filter(f => /^as-.+\.xml$/.test(f));
+  let urls = 0, all = "";
+  for (const f of files) { const s = await readFile(new URL("sitemaps/" + f, pub), "utf8"); all += s; urls += (s.match(/<url>/g) || []).length; }
+  // one URL per AS page per language: the page count in data/meta.json is the sitemap URL count
+  assert.equal(urls, meta.pages * LANGS.length);
+  assert.ok(files.length >= LANGS.length, "a sitemap shard per language at least");
+  // the reason for #99: more pages than announced AS numbers, and a page with no visible announcement is listed too
+  assert.ok(meta.pages > meta.announced);
+  const b1 = JSON.parse(await readFile(new URL("data/as/1.json", pub), "utf8"));
+  const quiet = Object.entries(b1).find(([, r]) => !("n4" in r));
+  assert.ok(quiet, "a record with no n4/n6 to test with");
+  assert.match(all, new RegExp(`<loc>[^<]*\\/AS${quiet[0]}<\\/loc>`));
+  assert.doesNotMatch(all, new RegExp(`\\/AS${quiet[0]}\\/<`));   // no trailing slash: /AS6427/ redirects
+});

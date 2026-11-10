@@ -179,7 +179,9 @@ ${sib}
     { k: T("k_cc"), v: cc || "–", cc: rec.cc }, { k: T("k_rir"), v: rec.r || "–" },
     { k: T("k_v4"), v: n4 ? v4 : T("v_none") },
     { k: T("k_v6"), v: n6 ? v6 : T("v_none") }] };
-  return { status: 200, rest: as, title, desc, main, graph, robots: routed ? undefined : "noindex, follow",
+  // an AS page is indexable even when nothing is announced from it (no data at all, or only below the visibility
+  // threshold): someone searching the number should find who holds it (1ms-shell#99). Only the 404 above is noindex.
+  return { status: 200, rest: as, title, desc, main, graph,
     foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { asn, x: !!rec.x, card } };
 }
 

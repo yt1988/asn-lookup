@@ -12,7 +12,7 @@
 //   data/ip4/<a>.bin        IPv4 ranges starting with octet a: Uint32 triples (first, last, asn), sorted
 //   data/ip6/<h>.bin        IPv6 ranges starting with hextet h: Uint32 × 5 (first 64 bits as hi, lo; last as hi, lo; asn)
 //   data/meta.json          counts and when the data was made
-//   sitemap.xml, sitemaps/  every announced AS's page in every language (with the language pages)
+//   sitemap.xml, sitemaps/  every AS's page in every language (with the language pages)
 // Downloads are kept in .cache/ for a day, so reruns are quick.
 // Usage: node scripts/data.mjs
 import { mkdir, readFile, writeFile, rm, stat } from "node:fs/promises";
@@ -202,6 +202,9 @@ export async function build() {
     let m = buckets.get(b); if (!m) buckets.set(b, m = {});
     m[a] = out;
   }
+  // every AS number the AS files hold, announced or not: each has an indexable page, so each goes in the sitemaps
+  // (1ms-shell#99); the same buckets decide both lists, so the two cannot drift apart
+  const pages = [...buckets.values()].flatMap(m => Object.keys(m)).map(Number).sort((x, y) => x - y);
   // names only, a thousand numbers a file (neighbour lists look up many ASNs at once)
   const byName = new Map();
   for (const m of buckets.values()) for (const a in m) if (m[a].h) {
@@ -219,20 +222,20 @@ export async function build() {
   console.log(`${buckets.size} AS files, ${(bytes / 1e6).toFixed(1)} MB, largest ${(biggest / 1e3).toFixed(0)} KB; ${announced.length} announced`);
 
   const at = new Date().toISOString();
-  await writeFile(new URL("data/meta.json", pub), JSON.stringify({ at, announced: announced.length, numbers: [...buckets.values()].reduce((n, m) => n + Object.keys(m).length, 0), ranges: rows, sources: SOURCES }));
+  await writeFile(new URL("data/meta.json", pub), JSON.stringify({ at, announced: announced.length, pages: pages.length, numbers: pages.length, ranges: rows, sources: SOURCES }));
 
-  // sitemaps: the language pages with their alternates, then every announced AS per language (50,000 URLs a file at most)
+  // sitemaps: the language pages with their alternates, then every AS with a page per language (50,000 URLs a file at most)
   const day = at.slice(0, 10), path = slug => "/" + (slug ? slug + "/" : "");
   const files = ["sitemaps/pages.xml"];
   await writeFile(new URL("sitemaps/pages.xml", pub), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
     LANGS.map(([, s]) => `  <url>\n    <loc>${SITE + path(s)}</loc>\n` + LANGS.map(([l, s2]) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${SITE + path(s2)}"/>`).join("\n") +
       `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE}/"/>\n  </url>`).join("\n") + "\n</urlset>\n");
   const PER = 45000;
-  for (const [, slug] of LANGS) for (let i = 0; i * PER < announced.length; i++) {
+  for (const [, slug] of LANGS) for (let i = 0; i * PER < pages.length; i++) {
     const f = `sitemaps/as-${slug || "en"}-${i + 1}.xml`;
     files.push(f);
     await writeFile(new URL(f, pub), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-      announced.slice(i * PER, (i + 1) * PER).map(a => `<url><loc>${SITE}${path(slug)}AS${a}</loc></url>`).join("\n") + "\n</urlset>\n");
+      pages.slice(i * PER, (i + 1) * PER).map(a => `<url><loc>${SITE}${path(slug)}AS${a}</loc></url>`).join("\n") + "\n</urlset>\n");
   }
   await writeFile(new URL("sitemap.xml", pub), `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     files.map(f => `  <sitemap><loc>${SITE}/${f}</loc><lastmod>${day}</lastmod></sitemap>`).join("\n") + "\n</sitemapindex>\n");
