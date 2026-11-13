@@ -57,7 +57,7 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .asl b { font: 600 13px var(--f-num); color: var(--ink); flex: none; }
 .asl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .asl .flag { align-self: center; }
-.asl:hover span { text-decoration: underline; }
+.asl:hover span { color: var(--ink); }
 .chips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0 18px; }
 .chips li { display: flex; min-width: 0; padding: 5px 0; font-size: 13.5px; }
 
@@ -124,7 +124,7 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .lrow .asl { flex: 1 1 auto; min-width: 0; }
 .lrow .rk { flex: none; min-width: 2.4em; text-align: right; color: var(--muted); font: 500 12px var(--f-num); }
 .lrow .n { flex: none; margin-left: auto; color: var(--muted); font: 500 12px var(--f-num); white-space: nowrap; }
-.hlist li .hrow { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.hl li .hrow { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .tool .m { font-size: 12.5px; }
 .txt { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: 13px/1.55 var(--f-num); resize: vertical; outline: none; }
 .txt:focus { border-color: var(--ink); }
