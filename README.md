@@ -23,7 +23,15 @@ Who owns this IP? Who is AS4134? [ASN Lookup](https://asn.1ms.dog) gives every I
 - **Any IP or prefix** (`/ip/8.8.8.8`, `/ip/1.0.0.0/24`): the AS announcing it, the announced prefix holding it, the range, the country; the registry's RDAP record (network name, organization, abuse e-mail) and reverse DNS; the prefix's RPKI state, since when it is announced and other ASes announcing it now or before. A link to [Reach Check](https://reach.1ms.dog/) tests whether it can be reached from around the world.
 - **Any AS** (`/AS4134`): name, holder, country, registry and allocation date; how many prefixes and addresses it announces; every prefix (copy them all in one click, for a firewall or proxy rules); the upstreams, downstreams and peers RIPE's collectors see; other ASNs of the same holder.
 - **A domain**: type it in the search box and it is resolved, then looked up.
-- **Your own IP**: the home page shows the AS and prefix of your connection.
+- **A word of a name** (`/find?q=cloudflare`): every network whose name, or the company holding it, carries the word, biggest first. A bare word in the search box goes there; `AS2.0` (asdot) is read as AS131072.
+- **Browse** (`/country/CN`, `/rir/apnic`): a country's or a registry's networks, biggest first.
+- **Leaderboards** (`/top`): who holds the most addresses, who announces the most prefixes, the oldest and the newest allocations, and who co-announces the most prefixes.
+- **Today** (`/today`): the routing table as RIPE's collectors saw it on the last daily run — routes announced, what appeared and what went since the run before, RPKI ROAs, networks announcing anything, and the newest allocated networks.
+- **Prefixes several networks announce** (`/moas`): the IPv4 prefixes with more than one origin AS.
+- **Tools** (`/tools`): look up a list of addresses or AS numbers at once, with CSV to download, and merge a pile of prefixes into the shortest CIDR list. Both run in your browser; nothing is sent to our server.
+- **Your own IP**: the home page shows the AS and prefix of your connection, with an RPKI coverage line for it.
+
+The AS page also carries a health line: RPKI coverage, how much of its announcement a strict validator (RFC 6811) would drop, prefixes another AS announces too, whether it announces IPv6, the year its block was allocated, and whether one upstream carries it alone. The address page says which registry allocated the block and when.
 
 Every AS page is rendered on the server, complete in the HTML, in 10 languages, and listed in the sitemaps (about 88,000 routed ASes).
 
@@ -37,7 +45,7 @@ Every AS page is rendered on the server, complete in the HTML, in 10 languages, 
 | The five RIRs' delegated-extended files | registry, allocation date, and AS numbers of the same holder | at build |
 | RDAP (rdap.arin.net, redirecting to the right RIR) | organization, abuse e-mail, last change | when a page opens, cached a day |
 | [RIPEstat](https://stat.ripe.net/) asn-neighbours | upstreams, downstreams, peers | when a page opens, cached a day |
-| RIPE RIS and [rpki-client](https://www.rpki-client.org/)'s VRPs, kept day by day by [history/](history/) on the 1ms.dog server | routing history, RPKI | once a day (03:40 UTC) |
+| RIPE RIS and [rpki-client](https://www.rpki-client.org/)'s VRPs, kept day by day by [history/](history/) on the 1ms.dog server | routing history, RPKI, and the `/today` figures | once a day (03:40 UTC) |
 | Cloudflare / Google DNS over HTTPS | reverse DNS, domains | live |
 
 `npm run data` downloads the files above and writes shards to `public/data/` (not committed):
@@ -48,6 +56,13 @@ data/px/<asn>.json    every prefix of an AS with more than 100
 data/names/<n>.json   names of AS numbers n*1000 … n*1000+999 (for neighbour lists)
 data/ip4/<a>.bin      IPv4 ranges starting with a: Uint32 triples (first, last, AS)
 data/ip6/<h>.bin      IPv6 ranges starting with h: first 64 bits (first, last) and AS
+data/find/<2>.json    a word of a network's name → the ASNs carrying it, by the word's first two letters
+data/cc/<CC>.json     a country's networks, the biggest first (index.json: how many, how many addresses)
+data/rir/<rir>.json   a registry's networks, the biggest first (index.json likewise)
+data/top.json         the leaderboards: addresses, prefixes, oldest, newest, co-announced, 100 rows each
+data/moas.json        the IPv4 prefixes more than one origin announces
+data/al4/<a>.bin      which registry allocated IPv4 addresses starting with a, and when
+data/al6/<h>.bin      the same for IPv6 starting with h
 ```
 
 The Worker reads only these static files; a request parses one or two small shards.
@@ -61,6 +76,10 @@ GET /api/as/<asn>           the AS's record with every prefix
 GET /api/rdap/as/<asn>      the registry record (RDAP)
 GET /api/rdap/ip/<address>  the registry record and reverse DNS
 GET /api/nb/<asn>           upstreams, downstreams and peers (top 8 each) with counts
+GET /api/find?q=<word>      networks whose name or holder carries the word
+GET /api/host/<domain>      the addresses a domain resolves to, each with its AS and prefix
+GET /api/top                the leaderboards
+GET /api/moas               the IPv4 prefixes several networks announce
 ```
 
 All JSON, with CORS.

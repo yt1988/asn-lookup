@@ -9,11 +9,15 @@ are in [README.md](README.md); the technical reasons behind the routing history,
 ASN Lookup answers "who owns this IP?" and "what is this AS?". It has three parts:
 
 - **The data** (`scripts/data.mjs`): downloads RIPE NCC RIS, iptoasn.com, RIPE's asn.txt and the five RIRs'
-  delegated files, and writes small shards into `public/data/` (not committed). The site's build runs it once a day.
+  delegated files, and writes small shards into `public/data/` (not committed): the lookup shards, the name index,
+  the leaderboards, the country and registry lists, the co-announced prefixes, and which registry allocated which
+  address block and when. The site's build runs it once a day.
 - **The site** (one Cloudflare Worker): pages and data are static assets in `public/` (`scripts/build.mjs` writes the
   templates, assets, robots.txt and sitemaps); `src/worker.js` renders the AS and address pages on request
-  (`src/render.mjs`) and answers `/api/*`. `src/app.js` is the browser script: it fills in the live parts (RDAP,
-  neighbours, routing history) and the share card. Strings are in `src/i18n/<lang>.mjs`, ten languages.
+  (`src/render.mjs`), plus the pages that are not one AS or one address — `/find`, `/today`, `/top`, `/moas`,
+  `/country`, `/rir`, `/tools`, `/host/<domain>` — and answers `/api/*`. `src/app.js` is the browser script: it fills
+  in the live parts (RDAP, neighbours, routing history, the AS health line) and runs the bulk lookup and prefix merge on
+  `/tools`. Strings are in `src/i18n/<lang>.mjs`, ten languages.
 - **The routing history** (`history/`, Go, standard library only): a separate program that runs once a day on a
   machine with a disk, keeps who announced what day by day with its RPKI state, and writes one JSON file per AS. The
   Worker fetches those files from `HISTORY_URL` (`/api/hist/<asn>`). Without it the site works the same, minus the

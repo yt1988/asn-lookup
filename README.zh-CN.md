@@ -23,7 +23,15 @@
 - **任意 IP 或前缀**（`/ip/8.8.8.8`、`/ip/1.0.0.0/24`）：宣告它的 AS、所在的宣告前缀、地址范围、国家/地区；注册机构的 RDAP 记录（网络名称、组织、滥用投诉邮箱）和反向解析；这个前缀的 RPKI 状态、从哪天开始宣告、现在或以前还有哪些 AS 宣告它。还有一个去 [Reach Check](https://reach.1ms.dog/) 的链接，测试世界各地能不能连上它。
 - **任意 AS**（`/AS4134`）：名称、持有者、国家/地区、注册机构和分配日期；宣告的前缀数量和地址数；全部前缀列表（可一键复制，用于防火墙或分流规则）；RIPE 采集器看到的上游、下游和对等；同一机构名下的其他 ASN；路由历史：前缀数量的变化、RPKI 有效 / 无效 / 没有 ROA、最近开始或停止宣告的前缀，以及其他 AS 也在宣告的前缀。
 - **域名**：搜索框里输入域名，先解析成 IP 再查。
-- **你自己的 IP**：首页直接显示本机出口所在的 AS 和前缀。
+- **名称里的一个词**（`/find?q=cloudflare`）：名称或持有机构里含这个词的所有网络，按规模排序。搜索框里输入一个词就到这里；`AS2.0`（asdot）会读成 AS131072。
+- **按国家或注册机构浏览**（`/country/CN`、`/rir/apnic`）：某个国家/地区或某个注册机构名下的网络，按规模排序。
+- **排行榜**（`/top`）：谁持有的地址最多、谁宣告的前缀最多、最早和最新的分配，以及和别的网络同时宣告同一前缀最多的。
+- **今天**（`/today`）：最近一次每日采集时 RIPE 看到的整张路由表——宣告的路由数、比上次多了什么少了什么、RPKI 授权数、有宣告的网络数，以及最近分配的 AS。
+- **被多个网络同时宣告的前缀**（`/moas`）：有不止一个源 AS 的 IPv4 前缀。
+- **工具**（`/tools`）：一次查一批地址或 AS 号，结果可以导出 CSV；把一堆前缀合并成最短的 CIDR 列表。两项都在你的浏览器里跑，不经过我们的服务器。
+- **你自己的 IP**：首页直接显示本机出口所在的 AS 和前缀，并给出一条 RPKI 覆盖情况。
+
+AS 页面还有一条健康度：RPKI 覆盖率、按严格校验（RFC 6811）会丢掉的比例、和别的 AS 同时宣告的前缀数、有没有宣告 IPv6、所在地址段是哪年分配的、是否只有一个上游；地址页面会写明这一段是哪个注册机构、哪一天分配的。
 
 每个 AS 页面都由服务端渲染，标题、描述、正文在 HTML 里就是完整的，10 种语言各一个地址，并列在站点地图里（约 8.8 万个有路由的 AS）。
 
@@ -37,7 +45,7 @@
 | 五大 RIR 的 delegated-extended 文件 | 分配机构、分配日期，以及同一持有者的 AS 号 | 构建时 |
 | RDAP（经 rdap.arin.net 跳转到对应 RIR） | 注册组织、滥用投诉邮箱、更新日期 | 打开页面时，缓存一天 |
 | [RIPEstat](https://stat.ripe.net/) asn-neighbours | 上游、下游、对等 | 打开页面时，缓存一天 |
-| RIPE RIS 和 [rpki-client](https://www.rpki-client.org/) 的 VRP，由 1ms.dog 服务器上的 [history/](history/) 每天记一次 | 路由历史、RPKI | 每天一次（UTC 03:40） |
+| RIPE RIS 和 [rpki-client](https://www.rpki-client.org/) 的 VRP，由 1ms.dog 服务器上的 [history/](history/) 每天记一次 | 路由历史、RPKI，以及 `/today` 的数字 | 每天一次（UTC 03:40） |
 | Cloudflare / Google DNS over HTTPS | 反向解析、域名解析 | 实时 |
 
 `npm run data` 下载上面的文件，在 `public/data/` 生成分片（不提交到仓库）：
@@ -48,6 +56,13 @@ data/px/<asn>.json    前缀超过 100 个的 AS 的完整列表
 data/names/<n>.json   AS 号 n*1000 … n*1000+999 的名称（邻居列表用）
 data/ip4/<a>.bin      以 a 开头的 IPv4 地址段：Uint32 三元组（起、止、AS）
 data/ip6/<h>.bin      以 h 开头的 IPv6 地址段：前 64 位（起、止）和 AS
+data/find/<2>.json    名称里的一个词 → 带这个词的 AS 号，按词的前两个字母分片
+data/cc/<CC>.json     某个国家/地区的网络，按规模排序（index.json：数量和地址数）
+data/rir/<rir>.json   某个注册机构的网络，同样按规模排序（index.json 同上）
+data/top.json         排行榜：地址数、前缀数、最早、最新、同时宣告，各 100 条
+data/moas.json        有不止一个源 AS 的 IPv4 前缀
+data/al4/<a>.bin      以 a 开头的 IPv4 地址由哪个注册机构、哪一天分配
+data/al6/<h>.bin      以 h 开头的 IPv6 地址同上
 ```
 
 Worker 查询时只读这些静态文件，每次请求只解析一两个小分片。
@@ -61,6 +76,10 @@ GET /api/as/<AS 号>       AS 的记录和全部前缀
 GET /api/rdap/as/<AS 号>  注册信息（RDAP）
 GET /api/rdap/ip/<地址>   注册信息和反向解析
 GET /api/nb/<AS 号>       上游、下游、对等（各前 8 个）和数量
+GET /api/find?q=<词>      名称或持有机构里含这个词的网络
+GET /api/host/<域名>      域名解析到的地址，每个地址的 AS 和前缀
+GET /api/top              排行榜
+GET /api/moas             被多个网络同时宣告的 IPv4 前缀
 ```
 
 都返回 JSON，允许跨域。

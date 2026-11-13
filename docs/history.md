@@ -40,6 +40,9 @@ What `history/` does and the files it writes are in [history/README.md](../histo
 - **Every file is written to a temporary name and renamed**, so a reader never sees half a file. Only the state is
   synced to disk before the rename; the AS files are written again by every run. Syncing all 87,000 took several
   minutes instead of seconds.
+- **The run's totals in `meta.json`**: routes announced, added and gone since the run before, VRPs, ASes, and when
+  each source was made. The site's `/today` page reads them (and the newest allocations from the build's own data),
+  so it costs the Worker one more small fetch, cached until 04:30 UTC like the AS files.
 
 ## Memory, measured
 

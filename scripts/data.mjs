@@ -11,15 +11,24 @@
 //   data/names/<n>.json     AS numbers n*1000 … n*1000+999: [name, country]
 //   data/ip4/<a>.bin        IPv4 ranges starting with octet a: Uint32 triples (first, last, asn), sorted
 //   data/ip6/<h>.bin        IPv6 ranges starting with hextet h: Uint32 × 5 (first 64 bits as hi, lo; last as hi, lo; asn)
+//   data/find/<2>.json      a word of a name or holder → the ASNs carrying it, sharded by the word's first two letters
+//   data/cc/<CC>.json       a country's networks, biggest first; data/cc/index.json has the counts
+//   data/rir/<rir>.json     a registry's networks likewise; data/rir/index.json
+//   data/al4/<a>.bin        which registry allocated IPv4 addresses starting with octet a, and when: Uint32 × 4
+//                           (first, last, registry, day as yyyymmdd)
+//   data/al6/<h>.bin        the same for IPv6 by its first 64 bits: Uint32 × 6 (first hi, lo; last hi, lo; registry, day)
+//   data/top.json           the leaderboards (/top): addresses, prefixes, oldest, newest, co-announced
+//   data/moas.json          the IPv4 prefixes more than one origin announces (/moas)
 //   data/meta.json          counts and when the data was made
-//   sitemap.xml, sitemaps/  every AS's page in every language (with the language pages)
+//   sitemap.xml, sitemaps/  every AS's page in every language, plus the hub pages (today, top, moas, country, rir)
 // Downloads are kept in .cache/ for a day, so reruns are quick.
 // Usage: node scripts/data.mjs
 import { mkdir, readFile, writeFile, rm, stat } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { LANGS } from "../src/langs.mjs";
-import { v6big, v4num, parseCidr } from "../src/ip.mjs";
+import { KNOWN } from "../src/popular.mjs";
+import { v6big, v4num, v4str, parseCidr } from "../src/ip.mjs";
 
 const SITE = (process.env.SITE_URL || "https://asn.1ms.dog").replace(/\/+$/, "");
 const root = new URL("../", import.meta.url), pub = new URL("public/", root), cache = new URL(".cache/", root);
@@ -28,6 +37,9 @@ export const BUCKET = 100;
 export const SHOWN = 100;
 const SIBLINGS = 24;      // sibling ASNs kept per AS (same holder at the registry)
 const SEEN = 10;          // a prefix counts when at least this many RIS peers see it (as RIPEstat does)
+const RIRS = ["APNIC", "RIPE", "ARIN", "LACNIC", "AFRINIC"];
+// words that name no network: left out of the search index (the token index would only return noise)
+const STOP = new Set(("the of and for inc ltd llc corp co company gmbh bv sa srl pty plc limited holdings group services service as").split(" "));
 
 const SOURCES = {
   ip2asn: "https://iptoasn.com/data/ip2asn-combined.tsv.gz",
@@ -83,12 +95,31 @@ export async function build() {
     Object.assign(rec(+m[1]), { h, n, cc });
   }
 
-  // registries: who allocated each AS number and when; the opaque id ties a holder's numbers together
+  // registries: who allocated each AS number and when; the opaque id ties a holder's numbers together. The same files
+  // say which registry allocated each block of addresses, and when (data/al4, data/al6: the address page's fallback
+  // when RDAP can't be reached).
   const holders = new Map();
+  const al4 = Array.from({ length: 256 }, () => []), al6 = new Map();
+  const dayOf = s => { const m = /^(\d{4})(\d{2})(\d{2})$/.exec(s || ""); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5 : 0; };
   for (const buf of dele) for (const line of buf.toString("utf8").split("\n")) {
     const f = line.split("|");
-    if (f[2] !== "asn" || !/^\d+$/.test(f[3]) || !/^(allocated|assigned)$/.test(f[6])) continue;
-    const rir = f[0] === "ripencc" ? "RIPE" : f[0].toUpperCase(), start = +f[3], count = +f[4];
+    const ri = RIRS.indexOf(f[0] === "ripencc" ? "RIPE" : f[0].toUpperCase());
+    if (ri < 0) continue;
+    const ok = /^(allocated|assigned)$/.test(f[6]), when = dayOf(f[5]);
+    if (f[2] === "ipv4" && ok && f[3]) {
+      const a = v4num(f[3]), n = +f[4];
+      if (a !== null && n > 0) al4[a >>> 24].push([a, Math.min(a + n - 1, 2 ** 32 - 1), ri, when]);
+    } else if (f[2] === "ipv6" && ok && parseCidr(f[3] + "/" + f[4])) {
+      const c = parseCidr(f[3] + "/" + f[4]);
+      if (c.len < 16 || c.len > 64) continue;      // registry blocks are /16 … /64; a longer one is a local assignment
+      const a = v6big(c.ip), e = a | ((1n << BigInt(128 - c.len)) - 1n), w = (n, i) => Number((n >> BigInt(i * 32)) & 0xffffffffn);
+      const h = Number(a >> 112n);
+      let arr = al6.get(h); if (!arr) al6.set(h, arr = []);
+      // the two halves of the first and last address as four 32-bit words, so a lookup compares without BigInt
+      arr.push([w(a, 3), w(a, 2), w(e, 3), w(e, 2), ri, when]);
+    }
+    if (f[2] !== "asn" || !/^\d+$/.test(f[3]) || !ok) continue;
+    const rir = RIRS[ri], start = +f[3], count = +f[4];
     const d = /^\d{8}$/.test(f[5]) ? `${f[5].slice(0, 4)}-${f[5].slice(4, 6)}-${f[5].slice(6, 8)}` : null;
     const key = f[7] ? rir + "|" + f[7] : null;
     for (let a = start; a < start + count && a - start < 100000; a++) {
@@ -132,8 +163,10 @@ export async function build() {
       }
     }
   }
-  // announced prefixes, per origin AS (AS sets like {1,2} are left out)
+  // announced prefixes, per origin AS (AS sets like {1,2} are left out). Every announced IPv4 prefix is kept once in
+  // moas4, as (key, origin): the prefixes more than one network announces (MOAS) are counted from it after the parse.
   let pfx = 0;
+  const moas4 = [];
   for (const [buf, key] of [[ris4, "p4"], [ris6, "p6"]]) {
     const seen = new Set();
     for (const line of gunzipSync(buf).toString("utf8").split("\n")) {
@@ -142,7 +175,9 @@ export async function build() {
       const c = parseCidr(f[1]);
       if (!c || c.len === 0 || seen.has(f[0] + " " + f[1])) continue;
       seen.add(f[0] + " " + f[1]);
-      rec(+f[0])[key].push(c.ip + "/" + c.len);
+      const asn = +f[0];
+      rec(asn)[key].push(c.ip + "/" + c.len);
+      if (c.f === 4) { moas4.push(v4num(c.ip) * 64 + c.len); moas4.push(asn); }
       pfx++;
     }
   }
@@ -152,11 +187,34 @@ export async function build() {
     if (r.p4.length > 1) r.p4 = r.p4.map(p => [k4(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
     if (r.p6.length > 1) r.p6 = r.p6.map(p => [k6(p), p]).sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x[1]);
   }
-  console.log(`${rows} routed ranges, ${pfx} announced prefixes, ${AS.size} AS numbers`);
+  // MOAS: the IPv4 prefixes more than one origin AS announces. The AS records get a count, and data/moas.json keeps
+  // the ones with the most origins for /moas.
+  const mo = new Map(), moasList = [];
+  let moasCount = 0;
+  {
+    const np = moas4.length / 2, idx = new Uint32Array(np);
+    for (let i = 0; i < np; i++) idx[i] = i;
+    idx.sort((a, b) => moas4[a * 2] - moas4[b * 2]);
+    for (let i = 0; i < np;) {
+      let j = i + 1; const k = moas4[idx[i] * 2];
+      while (j < np && moas4[idx[j] * 2] === k) j++;
+      if (j - i > 1) {
+        const asns = [];
+        for (let t = i; t < j; t++) asns.push(moas4[idx[t] * 2 + 1]);
+        moasCount++;
+        for (const a of asns) mo.set(a, (mo.get(a) || 0) + 1);
+        moasList.push([v4str(Math.floor(k / 64)) + "/" + (k % 64), asns]);
+      }
+      i = j;
+    }
+  }
+  moasList.sort((a, b) => b[1].length - a[1].length || (a[0] < b[0] ? -1 : 1));
+  moasList.length = Math.min(moasList.length, 300);
+  console.log(`${rows} routed ranges, ${pfx} announced prefixes, ${AS.size} AS numbers, ${moasCount} MOAS prefixes`);
 
   await rm(new URL("data/", pub), { recursive: true, force: true });
   await rm(new URL("sitemaps/", pub), { recursive: true, force: true });
-  for (const d of ["data/as/", "data/px/", "data/names/", "data/ip4/", "data/ip6/", "sitemaps/"]) await mkdir(new URL(d, pub), { recursive: true });
+  for (const d of ["data/as/", "data/px/", "data/names/", "data/ip4/", "data/ip6/", "data/find/", "data/cc/", "data/rir/", "data/al4/", "data/al6/", "sitemaps/"]) await mkdir(new URL(d, pub), { recursive: true });
 
   for (let o = 0; o < 256; o++) {
     if (!v4[o].length) continue;
@@ -169,10 +227,27 @@ export async function build() {
     list.sort((x, y) => x[0] - y[0] || x[1] - y[1]).forEach((r, i) => a.set(r, i * 5));
     await writeFile(new URL(`data/ip6/${h.toString(16)}.bin`, pub), Buffer.from(a.buffer));
   }
+  // the registry's block for an address: [first, last, registry, day] and [first hi/lo, last hi/lo, registry, day]
+  for (let o = 0; o < 256; o++) {
+    if (!al4[o].length) continue;
+    const a = new Uint32Array(al4[o].length * 4);
+    al4[o].sort((x, y) => x[0] - y[0]).forEach((r, i) => a.set(r, i * 4));
+    await writeFile(new URL(`data/al4/${o}.bin`, pub), Buffer.from(a.buffer));
+  }
+  for (const [h, list] of al6) {
+    const a = new Uint32Array(list.length * 6);
+    list.sort((x, y) => x[0] - y[0] || x[1] - y[1]).forEach((r, i) => a.set(r, i * 6));
+    await writeFile(new URL(`data/al6/${h.toString(16)}.bin`, pub), Buffer.from(a.buffer));
+  }
 
-  // AS records, a hundred numbers a file
+  // AS records, a hundred numbers a file; the same pass feeds the name index, the country and registry pages and the
+  // leaderboards
   const announced = [];
   const buckets = new Map();
+  const find = new Map(), ccMap = new Map(), rirMap = new Map();
+  const tops = { size: [], pfx: [], old: [], new: [], moas: [] };
+  const words = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(t => t.length >= 3 && !STOP.has(t));
+  const pushTo = (m, k, v) => { let l = m.get(k); if (!l) m.set(k, l = []); l.push(v); };
   for (const [a, r] of [...AS].sort((x, y) => x[0] - y[0])) {
     if (!r.h && !r.r && !r.p4.length && !r.p6.length) continue;
     if (a >= 4200000000 || (a >= 64512 && a <= 65535) || a === 23456) continue;   // private and reserved
@@ -182,6 +257,7 @@ export async function build() {
     if (r.cc) out.cc = r.cc;
     if (r.r) out.r = r.r;
     if (r.d) out.d = r.d;
+    if (mo.get(a)) out.mo = mo.get(a);
     if (r.k) {
       const sib = holders.get(r.k).filter(x => x !== a);
       if (sib.length) {
@@ -198,6 +274,19 @@ export async function build() {
       if (r.p4.length > SHOWN || r.p6.length > SHOWN) { out.x = 1; await writeFile(new URL(`data/px/${a}.json`, pub), JSON.stringify({ p4: r.p4, p6: r.p6 })); }
       announced.push(a);
     }
+    // one AS can be found by any word of its name or holder; the biggest few per word are kept
+    if (out.h) {
+      const seen = new Set(), kn = KNOWN[a];
+      // the well-known name too: "China Telecom" is how people search for CHINANET-BACKBONE
+      const list = [...words(out.h), ...words(out.n), ...(kn ? words(typeof kn === "string" ? kn : kn.en) : [])];
+      for (const t of list.slice(0, 12)) if (!seen.has(t)) { seen.add(t); pushTo(find, t, [a, (out.n4 || 0) + (out.n6 || 0), (out.c4 || 0)]); }
+    }
+    if (out.cc) pushTo(ccMap, out.cc, [a, out.h || "", out.n4 || 0, out.c4 || 0]);
+    if (out.r) pushTo(rirMap, out.r, [a, out.h || "", out.n4 || 0, out.c4 || 0]);
+    if (out.c4) tops.size.push([a, out.h || "", out.cc || "", out.c4]);
+    if ((out.n4 || 0) + (out.n6 || 0)) tops.pfx.push([a, out.h || "", out.cc || "", (out.n4 || 0) + (out.n6 || 0)]);
+    if (out.d && out.h) { tops.old.push([a, out.h, out.cc || "", out.d]); tops.new.push([a, out.h, out.cc || "", out.d]); }
+    if (out.mo) tops.moas.push([a, out.h || "", out.cc || "", out.mo]);
     const b = Math.floor(a / BUCKET);
     let m = buckets.get(b); if (!m) buckets.set(b, m = {});
     m[a] = out;
@@ -221,8 +310,42 @@ export async function build() {
   }
   console.log(`${buckets.size} AS files, ${(bytes / 1e6).toFixed(1)} MB, largest ${(biggest / 1e3).toFixed(0)} KB; ${announced.length} announced`);
 
+  // the name index: a word of a name or holder → the ASNs that carry it, sharded by the word's first two letters
+  const shards = new Map();
+  for (const [t, list] of find) {
+    if (list.length > 40) { list.sort((x, y) => y[1] - x[1] || y[2] - x[2] || x[0] - y[0]); list.length = 40; }
+    const k = t.slice(0, 2);
+    let m = shards.get(k); if (!m) shards.set(k, m = {});
+    m[t] = list.map(x => x[0]);
+  }
+  let fbytes = 0;
+  for (const [k, m] of shards) { const s = JSON.stringify(m); fbytes += s.length; await writeFile(new URL(`data/find/${k}.json`, pub), s); }
+  console.log(`${find.size} words in ${shards.size} index shards, ${(fbytes / 1e6).toFixed(1)} MB`);
+
+  // country and registry pages: their networks, biggest first
+  const rank = (x, y) => y[3] - x[3] || y[2] - x[2] || x[0] - y[0];
+  const ccIdx = [], rirIdx = [];
+  for (const [cc, list] of ccMap) { list.sort(rank); await writeFile(new URL(`data/cc/${cc}.json`, pub), JSON.stringify(list)); ccIdx.push([cc, list.length, list.reduce((s, x) => s + x[3], 0)]); }
+  for (const [r, list] of rirMap) { list.sort(rank); await writeFile(new URL(`data/rir/${r}.json`, pub), JSON.stringify(list)); rirIdx.push([r, list.length, list.reduce((s, x) => s + x[3], 0)]); }
+  ccIdx.sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1));
+  await writeFile(new URL("data/cc/index.json", pub), JSON.stringify(ccIdx));
+  await writeFile(new URL("data/rir/index.json", pub), JSON.stringify(rirIdx.sort((x, y) => RIRS.indexOf(x[0]) - RIRS.indexOf(y[0]))));
+
+  // the leaderboards (/top), a hundred each
+  const cut = (l, f) => l.sort(f).slice(0, 100);
+  const top = {
+    size: cut(tops.size, (x, y) => y[3] - x[3] || x[0] - y[0]),
+    pfx: cut(tops.pfx, (x, y) => y[3] - x[3] || x[0] - y[0]),
+    old: cut(tops.old, (x, y) => (x[3] < y[3] ? -1 : x[3] > y[3] ? 1 : x[0] - y[0])),
+    new: cut(tops.new, (x, y) => (x[3] > y[3] ? -1 : x[3] < y[3] ? 1 : x[0] - y[0])),
+    moas: cut(tops.moas, (x, y) => y[3] - x[3] || x[0] - y[0]),
+  };
+  await writeFile(new URL("data/top.json", pub), JSON.stringify(top));
+
   const at = new Date().toISOString();
-  await writeFile(new URL("data/meta.json", pub), JSON.stringify({ at, announced: announced.length, pages: pages.length, numbers: pages.length, ranges: rows, sources: SOURCES }));
+  await writeFile(new URL("data/moas.json", pub), JSON.stringify({ all: moasCount, day: at.slice(0, 10), list: moasList }));
+  await writeFile(new URL("data/meta.json", pub), JSON.stringify({ at, announced: announced.length, pages: pages.length, numbers: pages.length, ranges: rows,
+    moas: moasCount, countries: ccMap.size, words: find.size, sources: SOURCES }));
 
   // sitemaps: the language pages with their alternates, then every AS with a page per language (50,000 URLs a file at most)
   const day = at.slice(0, 10), path = slug => "/" + (slug ? slug + "/" : "");
@@ -236,6 +359,14 @@ export async function build() {
     files.push(f);
     await writeFile(new URL(f, pub), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
       pages.slice(i * PER, (i + 1) * PER).map(a => `<url><loc>${SITE}${path(slug)}AS${a}</loc></url>`).join("\n") + "\n</urlset>\n");
+  }
+  // the pages that are not per-AS: the leaderboards, the MOAS list, the countries and the registries
+  for (const [, slug] of LANGS) {
+    const f = `sitemaps/hub-${slug || "en"}.xml`, p = SITE + path(slug);
+    files.push(f);
+    const urls = [p + "today", p + "top", p + "moas", ...ccIdx.map(([cc]) => p + "country/" + cc), ...rirIdx.map(([r]) => p + "rir/" + r.toLowerCase())];
+    await writeFile(new URL(f, pub), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      urls.map(u => `<url><loc>${u}</loc></url>`).join("\n") + "\n</urlset>\n");
   }
   await writeFile(new URL("sitemap.xml", pub), `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     files.map(f => `  <sitemap><loc>${SITE}/${f}</loc><lastmod>${day}</lastmod></sitemap>`).join("\n") + "\n</sitemapindex>\n");

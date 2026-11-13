@@ -8,6 +8,8 @@ import { LANGS } from "../src/langs.mjs";
 
 const pub = new URL("../public/", import.meta.url);
 const built = existsSync(new URL("data/meta.json", pub)) && existsSync(new URL("sitemaps/", pub));
+// the same origin the data build wrote the sitemaps with
+const SITE = (process.env.SITE_URL || "https://asn.1ms.dog").replace(/\/+$/, "");
 
 test("every AS with a page is in the sitemaps of every language", { skip: built ? false : "run npm run data first" }, async () => {
   const meta = JSON.parse(await readFile(new URL("data/meta.json", pub), "utf8"));
@@ -24,4 +26,14 @@ test("every AS with a page is in the sitemaps of every language", { skip: built 
   assert.ok(quiet, "a record with no n4/n6 to test with");
   assert.match(all, new RegExp(`<loc>[^<]*\\/AS${quiet[0]}<\\/loc>`));
   assert.doesNotMatch(all, new RegExp(`\\/AS${quiet[0]}\\/<`));   // no trailing slash: /AS6427/ redirects
+});
+
+test("the hub pages are in every language's sitemap", { skip: built ? false : "run npm run data first" }, async () => {
+  for (const [lang, slug] of LANGS) {
+    const xml = await readFile(new URL(`sitemaps/hub-${slug || "en"}.xml`, pub), "utf8").catch(() => "");
+    const p = slug ? `/${slug}/` : "/";
+    for (const u of ["today", "top", "moas"]) assert.ok(xml.includes(`<loc>${SITE}${p}${u}</loc>`), `${lang}: ${u}`);
+    assert.match(xml, new RegExp(`<loc>${SITE}${p}country/[A-Z]{2}</loc>`), lang);
+    assert.match(xml, new RegExp(`<loc>${SITE}${p}rir/[a-z]+</loc>`), lang);
+  }
 });

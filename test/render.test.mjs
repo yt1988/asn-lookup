@@ -2,7 +2,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { STRINGS } from "../src/strings.mjs";
-import { asPage, ipPage, head } from "../src/render.mjs";
+import { asPage, ipPage, head, findPage, hostPage, topPage, moasPage, browsePage, browseIndexPage, todayPage, toolsPage } from "../src/render.mjs";
+import { search } from "../src/worker.js";
 
 const site = "https://asn.example";
 const T = l => k => STRINGS[l][k];
@@ -55,6 +56,58 @@ test("an address page", () => {
 test("names and holders are escaped", () => {
   const r = asPage({ T: T("en"), lang: "en", site, asn: 64496, rec: { h: "<x>", n: "a&b", r: "ARIN", p4: [], p6: [], n4: 0, n6: 0 } });
   assert.ok(!r.main.includes("<x>"));
+});
+
+test("the search reads AS numbers in asdot, addresses, names and domains", async () => {
+  const home = "/";
+  assert.equal(await search("AS2.0", home), "/AS131072");      // 2 * 65536
+  assert.equal(await search("1.10", home), "/AS65546");        // a small plain pair is asdot, not an address
+  assert.equal(await search("AS4134", home), "/AS4134");
+  assert.equal(await search("8.8.8.8", home), "/ip/8.8.8.8");
+  assert.equal(await search("1.0.0.0/24", home), "/ip/1.0.0.0/24");
+  assert.equal(await search("China Telecom", home), "/find?q=China%20Telecom");
+  assert.match(await search("x", home), /e=bad/);              // too short to be a name
+});
+
+test("the pages that are not one AS or one address", () => {
+  const m = { at: "2026-11-13T00:00:00Z" };
+  const q = "cloudflare";
+  const find = findPage({ T: T("en"), lang: "en", site, q, hits: [{ asn: 13335, h: "CLOUDFLARENET", cc: "US", n4: 10, n6: 2 }], meta: m });
+  assert.equal(find.status, 200);
+  assert.match(find.title, /cloudflare/);
+  assert.match(find.main, /href="\/AS13335"/);
+  assert.equal(find.robots, "noindex, follow");   // a search result stays out of the index
+
+  const cc = browsePage({ T: T("en"), lang: "en", site, kind: "cc", key: "CN", rows: [[4134, "CHINANET-BACKBONE", "CN", 99036416]], meta: m });
+  assert.match(cc.title, /China/);
+  assert.match(cc.main, /href="\/AS4134"/);
+  const idx = browseIndexPage({ T: T("en"), lang: "en", site, kind: "cc", rows: [["CN", 100, 2e8]], meta: m });
+  assert.match(idx.main, /href="\/country\/CN"/);
+
+  const top = topPage({ T: T("en"), lang: "en", site, top: { size: [[4134, "CHINANET-BACKBONE", "CN", 99036416]] }, meta: m });
+  assert.match(top.main, /<span class="rk">1<\/span>/);
+  assert.match(top.main, /href="\/AS4134"/);
+
+  const moas = moasPage({ T: T("en"), lang: "en", site, moas: { all: 4740, list: [["1.0.0.0/24", [13335, 209242]]] }, meta: m });
+  assert.match(moas.main, /4,740/);
+  assert.match(moas.main, /href="\/ip\/1\.0\.0\.0\/24"/);
+
+  const today = todayPage({ T: T("en"), lang: "en", site, hist: { day: "2026-11-13", routes: 1409958, added: 3433, gone: 3169, vrps: 1030828, ases: 87468 },
+    newest: [[155097, "DUKENETWORK-AS-AP", "JP", "2026-11-10"]], meta: m });
+  assert.match(today.main, /2026-11-13/);
+  assert.match(today.main, /\+3,433/);
+  assert.match(today.main, /−3,169/);
+  assert.match(today.main, /AS155097/);
+  const none = todayPage({ T: T("en"), lang: "en", site, hist: null, newest: [], meta: m });
+  assert.match(none.desc, /isn't available/);   // the daily history is down: the page still answers
+
+  const host = hostPage({ T: T("en"), lang: "en", site, host: "example.com", rows: [{ ip: "93.184.215.14", asn: 15133, rec: { h: "EDGECAST", cc: "US" }, pfx: "93.184.216.0/24" }], meta: m });
+  assert.match(host.main, /93\.184\.215\.14/);
+  assert.match(host.main, /href="\/AS15133"/);
+
+  const tools = toolsPage({ T: T("en"), lang: "en", site, meta: m });
+  assert.match(tools.main, /id="batchIn"/);
+  assert.match(tools.main, /id="cidrIn"/);
 });
 
 test("TW is named 中国台湾 / Taiwan, China with the flag of China", () => {
