@@ -183,6 +183,15 @@ export default {
   today_note: "每天在東京的伺服器上跑一次，資料來自 RIPE RIS 和驗證後的 RPKI ROA。",
   today_unavailable: "每日路由快照暫時取不到。",
 
+  cont_all: "全部",
+  cont_africa: "非洲",
+  cont_asia: "亞洲",
+  cont_europe: "歐洲",
+  cont_namerica: "北美洲",
+  cont_oceania: "大洋洲",
+  cont_samerica: "南美洲",
+  filter_ph: "國家或代碼",
+
   docs: [
     ["ASN 是什麼？", "ASN（自治系統號碼）就是一個網路在網際網路上的編號。電信業者、雲端業者、大學、大公司，只要自己管理路由，就會有一個或幾個 AS 號碼。例如 AS3462 是中華電信 HiNet，AS13335 是 Cloudflare。\n每個 AS 會對外「宣告」自己負責哪些網段（技術上叫前綴），其他網路依此把流量送過來，這套機制叫 BGP。AS 號碼由五大區域註冊機構分配：APNIC（亞太）、RIPE NCC（歐洲與中東）、ARIN（北美）、LACNIC（拉丁美洲）和 AFRINIC（非洲）。中國台灣的 AS 號碼通常經由 TWNIC 向 APNIC 申請。"],
     ["怎麼查一個 IP 是誰的？", "在輸入框填入 IP。頁面會告訴你：它屬於哪個 AS，也就是哪個網路；它在哪個網段裡；以及這段位址的登記資料：網路名稱、登記組織、濫用檢舉信箱和 DNS 反解。\n負責路由的網路和登記的組織常常不是同一家。例如一家公司把伺服器放在雲端，IP 由雲端業者宣告，登記的卻可能是這家公司。想知道一個 IP 是機房 IP 還是家用寬頻、有沒有被濫用過，可以點結果下方的「這個 IP 乾不乾淨」。"],

@@ -3,7 +3,7 @@
 // (the visitor's own address, the registry record, reverse DNS, neighbours) into rows drawn here from the start.
 import { GROUPS, knownName } from "./popular.mjs";
 import { LANGS, SLUG } from "./langs.mjs";
-import { regionName, flagCode } from "./region.mjs";
+import { regionName, flagCode, continentOf } from "./region.mjs";
 
 export const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export const fill = (s, v) => { for (const k in v) s = s.split("{" + k + "}").join(v[k]); return s; };
@@ -26,7 +26,8 @@ export function fmt(lang) {
     country: cc => { if (!cc) return ""; try { return regionName(cc, lang); } catch (e) { return cc; } },
   };
 }
-export const flag = cc => /^[A-Z]{2}$/.test(cc || "") ? `<img class="flag" src="/flags/${flagCode(cc)}.svg" alt="" width="20" height="15">` : "";
+// AP is a registry label in asn.txt ("Asia-Pacific"), not a country: there is no flag for it
+export const flag = cc => /^[A-Z]{2}$/.test(cc || "") && cc !== "AP" ? `<img class="flag" src="/flags/${flagCode(cc)}.svg" alt="" width="20" height="15">` : "";
 
 // The AS's display name: the well-known name if there is one, else the registry handle
 export const asName = (asn, rec, lang) => knownName(asn, lang) || (rec && rec.h) || "";
@@ -192,7 +193,7 @@ ${sib}
 /* ---------- search results, hosts, leaderboards, countries and registries ---------- */
 
 // a row per network: rank (leaderboards), name and country, then the figure it is ranked by
-const asRows = (home, lang, rows, shown, fmtVal, ranked = false) => `<ol class="hl lrow">${rows.slice(0, shown).map(([a, h, cc, v], i) =>
+const asRows = (home, lang, rows, shown, fmtVal, ranked = false, cls = "") => `<ol class="hl lrow${cls ? " " + cls : ""}">${rows.slice(0, shown).map(([a, h, cc, v], i) =>
   `<li>${ranked ? `<span class="rk">${i + 1}</span>` : ""}${asLink(home, a, knownName(a, lang) || h, cc)}<span class="n">${fmtVal(v)}</span></li>`).join("")}</ol>`;
 
 // the networks whose name or holder matched a search term (src/worker.js, /find)
@@ -257,17 +258,25 @@ export function browsePage({ T, lang, site, kind, key, rows, meta }) {
   const desc = fill(T(cc ? "cc_desc" : "rir_desc"), { cc: name, rir: name });
   const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(fill(T(cc ? "h_country" : "h_rir"), { cc: name, rir: name }))}</h1>
   <p class="lead">${esc(fill(T("cc_n"), { n: F.num(rows.length), a: F.count(T, "n_addr", total, true) }))}</p>${HOME_L(T, home)}</section>
-  <section class="card pop">${asRows(home, lang, rows, 300, v => F.count(T, "n_addr", v, true))}${rows.length > 300 ? `<p class="note m">${esc(fill(T("list_more"), { n: F.num(rows.length - 300) }))}</p>` : ""}</section>`;
+  <section class="card pop">${asRows(home, lang, rows, 300, v => F.count(T, "n_addr", v, true), false, "ccn")}${rows.length > 300 ? `<p class="note m">${esc(fill(T("list_more"), { n: F.num(rows.length - 300) }))}</p>` : ""}</section>`;
   return { status: 200, rest: (cc ? "country/" : "rir/") + key, title, desc, main, data: { page: cc ? "cc" : "rir", key }, foot: footOf(T, meta) };
 }
 
-// /country and /rir: the index of those pages
+// /country and /rir: the index of those pages. The countries are a grid with a flag each; the continent buttons and the
+// box filter it in the browser (src/app.js), together (a continent and a word both have to match)
 export function browseIndexPage({ T, lang, site, kind, rows, meta }) {
   const F = fmt(lang), home = path(SLUG[lang]), cc = kind === "cc";
   const title = T(cc ? "h_countries" : "h_rirs"), desc = T(cc ? "countries_note" : "rirs_note");
-  const list = rows.map(([k, n, a]) => `<li><a href="${home}${cc ? "country/" + k : "rir/" + k.toLowerCase()}">${esc(cc ? F.country(k) || k : k)}</a><span class="n">${F.num(n)}</span></li>`).join("");
+  const list = rows.map(([k, n]) => {
+    if (!cc) return `<li><a href="${home}rir/${k.toLowerCase()}">${esc(k)}</a><span class="n">${F.num(n)}</span></li>`;
+    const name = F.country(k) || k;
+    let en = ""; try { en = regionName(k, "en") || ""; } catch (e) {}   // searchable in English on every language's page
+    return `<li data-cc="${k}" data-cont="${continentOf(k)}" data-name="${esc((name + " " + en + " " + k).toLowerCase())}"><a class="ccl" href="${home}country/${k}" title="${esc(name)}">${flag(k)}<span>${esc(name)}</span></a><span class="n">${F.num(n)}</span></li>`;
+  }).join("");
+  const bar = cc ? `<div class="ccf" id="ccF" role="group" aria-label="${esc(title)}">${[["", "cont_all"], ["AF", "cont_africa"], ["AS", "cont_asia"], ["EU", "cont_europe"],
+    ["NA", "cont_namerica"], ["SA", "cont_samerica"], ["OC", "cont_oceania"]].map(([k, key]) => `<button type="button" class="btn sm${k ? "" : " on"}" data-cont="${k}" aria-pressed="${!k}">${esc(T(key))}</button>`).join("")}<input id="ccq" class="ccq" type="search" placeholder="${esc(T("filter_ph"))}" aria-label="${esc(T("filter_ph"))}" autocomplete="off"><span class="n" id="ccN"></span></div>` : "";
   const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>${HOME_L(T, home)}</section>
-<section class="card pop"><ul class="hl">${list}</ul></section>`;
+<section class="card pop">${bar}<ul class="hl${cc ? " cgrid" : ""}"${cc ? ' id="ccList"' : ""}>${list}</ul></section>`;
   return { status: 200, rest: cc ? "country" : "rir", title, desc, main, data: { page: cc ? "cc" : "rir" }, foot: footOf(T, meta) };
 }
 

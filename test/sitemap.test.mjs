@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { LANGS } from "../src/langs.mjs";
+import { continentOf } from "../src/region.mjs";
 
 const pub = new URL("../public/", import.meta.url);
 const built = existsSync(new URL("data/meta.json", pub)) && existsSync(new URL("sitemaps/", pub));
@@ -36,4 +37,10 @@ test("the hub pages are in every language's sitemap", { skip: built ? false : "r
     assert.match(xml, new RegExp(`<loc>${SITE}${p}country/[A-Z]{2}</loc>`), lang);
     assert.match(xml, new RegExp(`<loc>${SITE}${p}rir/[a-z]+</loc>`), lang);
   }
+});
+
+test("every country in the list belongs to a continent", { skip: built ? false : "run npm run data first" }, async () => {
+  const idx = JSON.parse(await readFile(new URL("data/cc/index.json", pub), "utf8"));
+  const miss = idx.map(([cc]) => cc).filter(cc => !continentOf(cc));
+  assert.deepEqual(miss, [], "a country the continent buttons cannot reach");
 });

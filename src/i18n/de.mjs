@@ -183,6 +183,15 @@ export default {
   today_note: "Einmal am Tag auf unserem Server in Tokio geprüft, aus RIPE RIS und den validierten RPKI-ROAs.",
   today_unavailable: "Die tägliche Routing-Momentaufnahme ist derzeit nicht verfügbar.",
 
+  cont_all: "Alle",
+  cont_africa: "Afrika",
+  cont_asia: "Asien",
+  cont_europe: "Europa",
+  cont_namerica: "Nordamerika",
+  cont_oceania: "Ozeanien",
+  cont_samerica: "Südamerika",
+  filter_ph: "Land oder Code",
+
   docs: [
     ["Was ist eine ASN?", "Eine ASN (Autonomous System Number) ist die Nummer eines Netzes im Internet. Provider, Clouds, Universitäten und große Unternehmen, die ihr Routing selbst verwalten, haben eine oder mehrere davon. AS3320 ist zum Beispiel die Deutsche Telekom, AS13335 Cloudflare.\nJedes AS gibt dem Rest des Internets bekannt, für welche IP-Adressblöcke (Präfixe) es zuständig ist; die anderen Netze wissen dadurch, wohin sie den Datenverkehr schicken. Das Protokoll dafür heißt BGP. Vergeben werden die Nummern von fünf regionalen Registries: APNIC (Asien-Pazifik), RIPE NCC (Europa und Naher Osten), ARIN (Nordamerika), LACNIC (Lateinamerika) und AFRINIC (Afrika)."],
     ["Wie finde ich heraus, wem eine IP gehört?", "Gib die IP ins Feld ein. Du siehst, zu welchem AS, also zu welchem Netz, sie gehört; in welchem Präfix sie liegt; und den Registry-Eintrag für den Block: Netzname, auf wen er registriert ist, Abuse-Kontakt und Reverse DNS.\nDas Netz, das eine Adresse routet, und die eingetragene Organisation sind oft nicht dieselben. Hat eine Firma ihre Server in der Cloud, kann ihr Block vom Cloud-Anbieter angekündigt werden. Ob eine IP aus dem Rechenzentrum oder einem Privatanschluss stammt und ob sie schon für Missbrauch aufgefallen ist, zeigt „Ist diese IP sauber?“ unter dem Ergebnis."],

@@ -125,6 +125,21 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .lrow .rk { flex: none; min-width: 2.4em; text-align: right; color: var(--muted); font: 500 12px var(--f-num); }
 .lrow .n { flex: none; margin-left: auto; color: var(--muted); font: 500 12px var(--f-num); white-space: nowrap; }
 .hl li .hrow { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+/* /country and /rir: their networks in as many columns as fit, and the countries as a grid with a flag each, filtered
+   by continent and by name in the browser (src/app.js) */
+.lrow.ccn { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 0 28px; }
+.hl li .n { margin-left: auto; padding-left: 10px; color: var(--muted); font: 500 12px var(--f-num); white-space: nowrap; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0 28px; }
+.cgrid li { flex-wrap: nowrap; }
+.ccl { display: inline-flex; align-items: center; gap: 7px; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--fg); text-decoration: none; }
+.ccl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ccl:hover span { color: var(--ink); }
+.ccl .flag { flex: none; }
+.ccf { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 0 14px; }
+.ccf .btn.on { border-color: var(--ink); color: var(--ink); background: var(--ink-soft); }
+.ccf .n { margin-left: auto; color: var(--muted); font: 500 12px var(--f-num); }
+.ccq { width: 180px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-ctl-sm); background: var(--bg); color: var(--fg); font: 16px var(--f-ui); outline: none; }
+.ccq:focus { border-color: var(--ink); }
 .tool .m { font-size: 12.5px; }
 .txt { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: 13px/1.55 var(--f-num); resize: vertical; outline: none; }
 .txt:focus { border-color: var(--ink); }
@@ -173,6 +188,7 @@ pre.txt { white-space: pre-wrap; overflow-wrap: anywhere; }
 }
 @media (max-width: 720px) {
   .hero, .pop, .pfxs, .nb, .sib, .hist { padding: 16px; }
+  .ccq { width: 100%; }   /* the filter field gets the row of its own on a phone */
   .evl { grid-template-columns: minmax(0, 1fr); }
   .hero h1 { font-size: 20px; }
   /* the whole hint fits beside the button (a smaller hint doesn't make iOS zoom: the field's own size does) */

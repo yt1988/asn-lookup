@@ -83,6 +83,14 @@ test("the pages that are not one AS or one address", () => {
   assert.match(cc.main, /href="\/AS4134"/);
   const idx = browseIndexPage({ T: T("en"), lang: "en", site, kind: "cc", rows: [["CN", 100, 2e8]], meta: m });
   assert.match(idx.main, /href="\/country\/CN"/);
+  assert.match(idx.main, /class="hl cgrid"/);          // a grid, not one long column
+  assert.match(idx.main, /id="ccq"/);                 // the box that filters it
+  assert.match(idx.main, /data-cont="AS"/);           // China is in Asia: the continent buttons can pick it
+  assert.match(idx.main, /\/flags\/cn\.svg/);
+  assert.match(idx.main, /data-name="[^"]*china[^"]*"/);   // found by its English name on every language's page
+  assert.match(cc.main, /class="hl lrow ccn"/);       // a country's networks in columns too
+  const ap = browseIndexPage({ T: T("en"), lang: "en", site, kind: "cc", rows: [["AP", 10, 1e6]], meta: m });
+  assert.doesNotMatch(ap.main, /\/flags\/ap\.svg/);   // a registry label, not a country
 
   const top = topPage({ T: T("en"), lang: "en", site, top: { size: [[4134, "CHINANET-BACKBONE", "CN", 99036416]] }, meta: m });
   assert.match(top.main, /<span class="rk">1<\/span>/);

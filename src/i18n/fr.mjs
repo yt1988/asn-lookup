@@ -183,6 +183,15 @@ export default {
   today_note: "Vérifié une fois par jour sur notre serveur à Tokyo, à partir de RIPE RIS et des ROA RPKI validés.",
   today_unavailable: "L'instantané quotidien du routage n'est pas disponible pour le moment.",
 
+  cont_all: "Tous",
+  cont_africa: "Afrique",
+  cont_asia: "Asie",
+  cont_europe: "Europe",
+  cont_namerica: "Amérique du Nord",
+  cont_oceania: "Océanie",
+  cont_samerica: "Amérique du Sud",
+  filter_ph: "Pays ou code",
+
   docs: [
     ["Qu'est-ce qu'un ASN ?", "Un ASN (numéro de système autonome) est le numéro qui identifie un réseau sur internet. Les opérateurs, les clouds, les universités et les grandes entreprises qui gèrent leur propre routage en ont un ou plusieurs. Par exemple, AS3215 est Orange et AS13335 est Cloudflare.\nChaque AS « annonce » au reste d'internet les blocs d'adresses IP dont il s'occupe (ce qu'on appelle des préfixes), et les autres réseaux s'en servent pour savoir où envoyer le trafic. Le protocole qui fait ce travail s'appelle BGP. Les numéros sont attribués par cinq registres régionaux : APNIC (Asie-Pacifique), RIPE NCC (Europe et Moyen-Orient), ARIN (Amérique du Nord), LACNIC (Amérique latine) et AFRINIC (Afrique)."],
     ["Comment savoir à qui appartient une IP ?", "Saisissez l'IP dans le champ. Vous verrez à quel AS, c'est-à-dire à quel réseau, elle appartient ; dans quel préfixe elle se trouve ; et l'enregistrement de ce bloc : nom du réseau, titulaire enregistré, contact abus et DNS inverse.\nLe réseau qui achemine une adresse et l'organisation enregistrée sont souvent différents. Une entreprise qui héberge ses serveurs dans le cloud, par exemple, peut voir son bloc annoncé par son fournisseur de cloud. Pour savoir si une IP vient d'un datacenter ou d'une connexion résidentielle, et si elle a déjà servi à des abus, ouvrez « Cette IP est-elle propre ? » sous le résultat."],

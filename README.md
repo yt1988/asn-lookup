@@ -24,7 +24,7 @@ Who owns this IP? Who is AS4134? [ASN Lookup](https://asn.1ms.dog) gives every I
 - **Any AS** (`/AS4134`): name, holder, country, registry and allocation date; how many prefixes and addresses it announces; every prefix (copy them all in one click, for a firewall or proxy rules); the upstreams, downstreams and peers RIPE's collectors see; other ASNs of the same holder.
 - **A domain**: type it in the search box and it is resolved, then looked up.
 - **A word of a name** (`/find?q=cloudflare`): every network whose name, or the company holding it, carries the word, biggest first. A bare word in the search box goes there; `AS2.0` (asdot) is read as AS131072.
-- **Browse** (`/country/CN`, `/rir/apnic`): a country's or a registry's networks, biggest first.
+- **Browse** (`/country`, `/country/CN`, `/rir/apnic`): the countries with their flags, filterable by continent and by name; and a country's or a registry's networks, biggest first.
 - **Leaderboards** (`/top`): who holds the most addresses, who announces the most prefixes, the oldest and the newest allocations, and who co-announces the most prefixes.
 - **Today** (`/today`): the routing table as RIPE's collectors saw it on the last daily run — routes announced, what appeared and what went since the run before, RPKI ROAs, networks announcing anything, and the newest allocated networks.
 - **Prefixes several networks announce** (`/moas`): the IPv4 prefixes with more than one origin AS.

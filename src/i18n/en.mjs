@@ -183,6 +183,15 @@ export default {
   today_note: "Checked once a day on our server in Tokyo, from RIPE RIS and the validated RPKI ROAs.",
   today_unavailable: "The daily routing snapshot isn't available right now.",
 
+  cont_all: "All",
+  cont_africa: "Africa",
+  cont_asia: "Asia",
+  cont_europe: "Europe",
+  cont_namerica: "North America",
+  cont_oceania: "Oceania",
+  cont_samerica: "South America",
+  filter_ph: "Country or code",
+
   docs: [
     ["What is an ASN?", "An ASN (autonomous system number) is a network's ID on the internet. Carriers, clouds, universities and large companies that manage their own routing each have one or more. AS4134, for example, is China Telecom's 163 backbone; AS13335 is Cloudflare.\nEach AS announces which blocks of IP addresses (prefixes) it handles, and the rest of the internet uses that to decide where to send traffic. The protocol behind this is BGP. AS numbers are handed out by five regional registries: APNIC (Asia-Pacific), RIPE NCC (Europe and the Middle East), ARIN (North America), LACNIC (Latin America) and AFRINIC (Africa)."],
     ["How do I find who owns an IP?", "Type the IP in the box. You'll see which AS, meaning which network, it's on; which prefix it's in; and the registry record for that block: network name, who it's registered to, the abuse contact and reverse DNS.\nThe network that routes an address and the organization it's registered to are often different. A company running servers in the cloud, for example, may have its block announced by the cloud provider. To check whether an IP is a data center IP or home broadband, and whether it's been flagged for abuse, open “Is this IP clean?” under the result."],

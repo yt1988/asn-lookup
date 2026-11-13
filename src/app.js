@@ -376,6 +376,25 @@ import { parseCidr, v4num, v6big, rangeToCidrs4, rangeToCidrs6 } from "./ip.mjs"
     cCopy.onclick = () => copy(merged.join("\n") + "\n").then(() => toast(t("copied")), () => toast(t("na")));
   }
 
+  /* ---------- /country: the continent buttons and the box filter the list, together (a continent and a word) ---------- */
+  if ($("#ccList")) {
+    const box = $("#ccq"), count = $("#ccN"), btns = $$("#ccF [data-cont]"), rows = $$("#ccList li");
+    let cont = "";
+    const apply = () => {
+      const q = box.value.trim().toLowerCase();
+      let shown = 0;
+      for (const li of rows) {
+        const ok = (!cont || li.dataset.cont === cont) && (!q || li.dataset.name.indexOf(q) >= 0);
+        li.hidden = !ok; if (ok) shown++;
+      }
+      count.textContent = shown === rows.length ? "" : num(shown) + " / " + num(rows.length);
+      for (const b of btns) { const on = b.dataset.cont === cont; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); }
+    };
+    for (const b of btns) b.onclick = () => { cont = b.dataset.cont; apply(); };
+    box.addEventListener("input", apply);
+    box.addEventListener("search", apply);   // the field's own clear button
+  }
+
   /* ---------- reporting a problem (the host's dialog; 1ms-shell docs/tool-contract.md, "报告问题") ---------- */
   // The dialog calls this when it opens and shows the answer folded under "This result": a line saying what was looked
   // up, the values as JSON (6 KB at most), and the readings as one-tap answers. It is what the page shows — the AS and

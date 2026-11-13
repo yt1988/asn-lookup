@@ -183,6 +183,15 @@ export default {
   today_note: "Se comprueba una vez al día en nuestro servidor de Tokio, con RIPE RIS y los ROA de RPKI validados.",
   today_unavailable: "La instantánea diaria de rutas no está disponible ahora mismo.",
 
+  cont_all: "Todos",
+  cont_africa: "África",
+  cont_asia: "Asia",
+  cont_europe: "Europa",
+  cont_namerica: "América del Norte",
+  cont_oceania: "Oceanía",
+  cont_samerica: "América del Sur",
+  filter_ph: "País o código",
+
   docs: [
     ["¿Qué es un ASN?", "Un ASN (número de sistema autónomo) es el número que identifica a una red en internet. Los operadores, las nubes, las universidades y las grandes empresas que gestionan su propio enrutamiento tienen uno o varios. Por ejemplo, AS3352 es Telefónica España y AS13335 es Cloudflare.\nCada AS «anuncia» al resto de internet qué bloques de direcciones IP gestiona (los llamados prefijos), y las demás redes usan esa información para saber adónde enviar el tráfico. El protocolo que hace esto se llama BGP. Los números los asignan cinco registros regionales: APNIC (Asia-Pacífico), RIPE NCC (Europa y Oriente Medio), ARIN (Norteamérica), LACNIC (Latinoamérica y el Caribe) y AFRINIC (África)."],
     ["¿Cómo sé de quién es una IP?", "Escribe la IP en la casilla. Verás a qué AS pertenece, es decir, de qué red es; en qué prefijo está; y el registro de ese bloque: nombre de la red, a nombre de quién está registrado, contacto de abuso y DNS inverso.\nLa red que enruta una dirección y la organización que figura en el registro a menudo no coinciden. Por ejemplo, una empresa con servidores en la nube puede tener su bloque anunciado por el proveedor de nube. Para saber si una IP es de centro de datos o residencial, y si se ha usado para abusos, abre «¿Está limpia esta IP?» debajo del resultado."],

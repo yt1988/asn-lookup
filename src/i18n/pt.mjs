@@ -183,6 +183,15 @@ export default {
   today_note: "Verificado uma vez por dia no nosso servidor em Tóquio, com RIPE RIS e os ROAs de RPKI validados.",
   today_unavailable: "O instantâneo diário de rotas não está disponível agora.",
 
+  cont_all: "Todos",
+  cont_africa: "África",
+  cont_asia: "Ásia",
+  cont_europe: "Europa",
+  cont_namerica: "América do Norte",
+  cont_oceania: "Oceania",
+  cont_samerica: "América do Sul",
+  filter_ph: "País ou código",
+
   docs: [
     ["O que é um ASN?", "Um ASN (número de sistema autônomo) é o número que identifica uma rede na internet. Operadoras, nuvens, universidades e grandes empresas que cuidam do próprio roteamento têm um ou mais. Por exemplo, AS28573 é a Claro Brasil e AS13335 é a Cloudflare.\nCada AS “anuncia” para o resto da internet quais blocos de endereços IP ele atende (os chamados prefixos), e as outras redes usam isso para saber para onde mandar o tráfego. O protocolo que faz isso se chama BGP. Os números são distribuídos por cinco registros regionais: APNIC (Ásia-Pacífico), RIPE NCC (Europa e Oriente Médio), ARIN (América do Norte), LACNIC (América Latina) e AFRINIC (África). No Brasil, quem distribui é o Registro.br, ligado ao LACNIC."],
     ["Como descubro de quem é um IP?", "Digite o IP no campo. Você vê de qual AS, ou seja, de qual rede, ele é; em qual prefixo ele está; e o registro desse bloco: nome da rede, para quem está registrado, contato de abuso e DNS reverso.\nA rede que roteia um endereço e a organização registrada muitas vezes não são a mesma. Uma empresa com servidores na nuvem, por exemplo, pode ter o bloco anunciado pelo provedor de nuvem. Para saber se um IP é de data center ou residencial, e se já foi usado para abuso, abra “Este IP está limpo?” abaixo do resultado."],
