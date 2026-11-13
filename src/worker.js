@@ -16,7 +16,7 @@ import { LANGS, BY_SLUG, SLUG } from "./langs.mjs";
 import { family, canon, isPublic, v4num, v6big, v4str, v6str, find4, find6, parseCidr } from "./ip.mjs";
 import { asPage, ipPage, findPage, hostPage, topPage, moasPage, todayPage, browsePage, browseIndexPage, toolsPage, head, esc, path } from "./render.mjs";
 import { PREPAINT, csp, HEADERS } from "./csp.mjs";
-import { knownName } from "./popular.mjs";
+import { knownName, KNOWN } from "./popular.mjs";
 
 const SITE_DEFAULT = "https://asn.1ms.dog";
 const BUCKET = 100, NAMES = 1000;
@@ -74,24 +74,49 @@ async function lookup(env, o, ip) {
   return { ip, asn: hit.asn, rec, range, pfx };
 }
 
-// A search by name: data/find holds word → ASNs, one shard fetched per query (scripts/data.mjs). Every word of the
-// query has to appear in the network's name, its holder or its well-known name; the biggest networks come first.
+// A search by name: data/find holds word → ASNs, one shard fetched per query (scripts/data.mjs); the Chinese, Japanese
+// and Korean names are all in data/find/cjk.json. Every word of the query has to appear in the network's name, its
+// holder or its well-known name; the biggest networks come first.
+const CJK_Q = /[぀-ヿ㐀-䶿一-鿿가-힯豈-﫿]{2,}/g;
+// the well-known name in every language: "中国电信" finds AS4134 from any language's page
+const knownAll = a => { const k = KNOWN[a]; return !k ? "" : typeof k === "string" ? k : Object.values(k).join(" "); };
+const STOPW = new Set("the of and for inc ltd llc corp co company gmbh bv sa srl pty plc limited holdings group services service as".split(" "));
+const enWords = a => { const k = KNOWN[a]; if (!k) return []; return (typeof k === "string" ? k : k.en).toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(w => w.length >= 3 && !STOPW.has(w)); };
 async function findByName(env, o, q) {
-  const words = String(q || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(w => w.length >= 2).slice(0, 4);
-  if (!words.length) return [];
-  const longest = [...words].sort((a, b) => b.length - a.length)[0], k = longest.slice(0, 2);
-  if (!/^[a-z0-9]{2}$/.test(k)) return [];
-  const shard = (await asset(env, o, `/data/find/${k}.json`)) || {};
+  q = String(q || "").toLowerCase();
+  const cjkTok = q.match(CJK_Q) || [];
+  const words = q.replace(CJK_Q, " ").replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(w => w.length >= 2).slice(0, 4);
+  if (!words.length && !cjkTok.length) return [];
   const asns = new Set();
-  for (const t in shard) if (t.startsWith(longest)) for (const a of shard[t]) asns.add(a);
+  const shardOf = async w => /^[a-z0-9]{2}$/.test(w.slice(0, 2)) ? (await asset(env, o, `/data/find/${w.slice(0, 2)}.json`)) || {} : {};
+  const shardHit = async w => { const shard = await shardOf(w); for (const t in shard) if (t.startsWith(w)) for (const a of shard[t]) asns.add(a); };
+  // a CJK query matches any indexed run that contains it ("中国电信" in "中国电信国际"); there are few enough to scan
+  const direct = [];
+  if (cjkTok.length) {
+    const all = (await asset(env, o, "/data/find/cjk.json")) || {};
+    for (const t in all) if (cjkTok.every(x => t.includes(x))) for (const a of all[t]) { asns.add(a); if (KNOWN[a]) direct.push(a); }
+  }
+  // and in English: the words every one of those networks' English names has ("china", "telecom"), so 中国电信 also finds
+  // the regional China Telecom ASes that have no Chinese name of their own
+  let bridge = [];
+  if (direct.length) {
+    const lists = direct.map(enWords).filter(l => l.length);
+    if (lists.length) {
+      bridge = lists.reduce((x, y) => x.filter(w => y.includes(w)));
+      if (bridge.length) await shardHit([...bridge].sort((a, b) => b.length - a.length)[0]);
+    }
+  }
+  if (words.length) await shardHit([...words].sort((a, b) => b.length - a.length)[0]);
   const out = [];
   let checked = 0;
   for (const a of asns) {
     if (++checked > 150) break;
     const rec = await asRec(env, o, a);
     if (!rec) continue;
-    const hay = ((rec.h || "") + " " + (rec.n || "") + " " + knownName(a, "en")).toLowerCase();
+    const hay = ((rec.h || "") + " " + (rec.n || "") + " " + knownAll(a)).toLowerCase();
     if (!words.every(w => hay.includes(w))) continue;
+    if (!cjkTok.every(x => hay.includes(x) || (bridge.length > 0 && bridge.every(w => hay.includes(w))))) continue;
     out.push({ asn: a, h: rec.h || "", n: rec.n || "", cc: rec.cc || "", n4: rec.n4 || 0, n6: rec.n6 || 0 });
   }
   return out.sort((x, y) => (y.n4 + y.n6) - (x.n4 + x.n6) || x.asn - y.asn).slice(0, 30);

@@ -44,3 +44,10 @@ test("every country in the list belongs to a continent", { skip: built ? false :
   const miss = idx.map(([cc]) => cc).filter(cc => !continentOf(cc));
   assert.deepEqual(miss, [], "a country the continent buttons cannot reach");
 });
+
+test("Chinese and Japanese names are searchable", { skip: built ? false : "run npm run data first" }, async () => {
+  const cjk = JSON.parse(await readFile(new URL("data/find/cjk.json", pub), "utf8"));
+  for (const [q, asn] of [["中国电信", 4134], ["中國電信", 4134], ["中国联通", 4837], ["中华电信", 3462]]) {
+    assert.ok((cjk[q] || []).includes(asn), q);
+  }
+});

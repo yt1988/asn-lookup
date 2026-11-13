@@ -244,9 +244,13 @@ export async function build() {
   // leaderboards
   const announced = [];
   const buckets = new Map();
-  const find = new Map(), ccMap = new Map(), rirMap = new Map();
+  const find = new Map(), cjk = new Map(), ccMap = new Map(), rirMap = new Map();
   const tops = { size: [], pfx: [], old: [], new: [], moas: [] };
   const words = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(t => t.length >= 3 && !STOP.has(t));
+  // Chinese, Japanese and Korean names have no spaces between their words: each run of those characters is the token
+  // ("中国电信 163 骨干网" → 中国电信, 骨干网). They go in one file of their own (data/find/cjk.json), not the shards.
+  const CJK = /[぀-ヿ㐀-䶿一-鿿가-힯豈-﫿]{2,}/g;
+  const cjkWords = s => String(s || "").match(CJK) || [];
   const pushTo = (m, k, v) => { let l = m.get(k); if (!l) m.set(k, l = []); l.push(v); };
   for (const [a, r] of [...AS].sort((x, y) => x[0] - y[0])) {
     if (!r.h && !r.r && !r.p4.length && !r.p6.length) continue;
@@ -277,9 +281,12 @@ export async function build() {
     // one AS can be found by any word of its name or holder; the biggest few per word are kept
     if (out.h) {
       const seen = new Set(), kn = KNOWN[a];
-      // the well-known name too: "China Telecom" is how people search for CHINANET-BACKBONE
-      const list = [...words(out.h), ...words(out.n), ...(kn ? words(typeof kn === "string" ? kn : kn.en) : [])];
-      for (const t of list.slice(0, 12)) if (!seen.has(t)) { seen.add(t); pushTo(find, t, [a, (out.n4 || 0) + (out.n6 || 0), (out.c4 || 0)]); }
+      // the well-known name too, in every language: "China Telecom" is how people search for CHINANET-BACKBONE, and
+      // 中国电信 / 中國電信 / 中国電信 are how they do it from a Chinese or Japanese keyboard
+      const knNames = kn ? (typeof kn === "string" ? [kn] : Object.values(kn)) : [];
+      const list = [...words(out.h), ...words(out.n), ...knNames.flatMap(words)];
+      for (const t of list.slice(0, 16)) if (!seen.has(t)) { seen.add(t); pushTo(find, t, [a, (out.n4 || 0) + (out.n6 || 0), (out.c4 || 0)]); }
+      for (const t of new Set([...cjkWords(out.h), ...cjkWords(out.n), ...knNames.flatMap(cjkWords)])) pushTo(cjk, t, a);
     }
     if (out.cc) pushTo(ccMap, out.cc, [a, out.h || "", out.n4 || 0, out.c4 || 0]);
     if (out.r) pushTo(rirMap, out.r, [a, out.h || "", out.n4 || 0, out.c4 || 0]);
@@ -321,6 +328,11 @@ export async function build() {
   let fbytes = 0;
   for (const [k, m] of shards) { const s = JSON.stringify(m); fbytes += s.length; await writeFile(new URL(`data/find/${k}.json`, pub), s); }
   console.log(`${find.size} words in ${shards.size} index shards, ${(fbytes / 1e6).toFixed(1)} MB`);
+  // the CJK names in one file: few enough that a lookup reads it whole
+  const cjkOut = {};
+  for (const [t, list] of cjk) cjkOut[t] = [...new Set(list)].sort((x, y) => x - y);
+  await writeFile(new URL("data/find/cjk.json", pub), JSON.stringify(cjkOut));
+  console.log(`${cjk.size} CJK names in data/find/cjk.json, ${(JSON.stringify(cjkOut).length / 1e3).toFixed(0)} KB`);
 
   // country and registry pages: their networks, biggest first
   const rank = (x, y) => y[3] - x[3] || y[2] - x[2] || x[0] - y[0];
