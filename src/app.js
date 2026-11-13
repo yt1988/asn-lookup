@@ -3,6 +3,7 @@
 // the full prefix list on demand. Strings: window.L1MS.
 import { knownName } from "./popular.mjs";
 import { regionName, flagCode } from "./region.mjs";
+import { parseCidr, v4num, v6big, rangeToCidrs4, rangeToCidrs6 } from "./ip.mjs";
 
 (function () {
   "use strict";
@@ -164,6 +165,25 @@ import { regionName, flagCode } from "./region.mjs";
   // fill the live rows of a key–value list: data-r="<field>" → value
   const fillRows = (vals) => $$("[data-r]").forEach(li => { const v = vals[li.dataset.r]; li.querySelector("b").innerHTML = v ? v : NA; });
   const mail = e => e ? `<a href="mailto:${esc(e)}">${esc(e)}</a>` : "";
+  // the checkup strip: what the record says about a network (assignment, IPv6, shared prefixes) and what the history
+  // adds (RPKI). h: { n4, n6, c4, mo, d }; rpki: [not found, valid, invalid]; nb: the neighbours answer.
+  const healthHTML = (h, rpki, nb) => {
+    if (!h) return "";
+    const items = [];
+    if (rpki) {
+      const all = rpki[0] + rpki[1] + rpki[2];
+      if (all) items.push(`<li><span>${esc(t("health_rpki"))}</span><b>${Math.round(rpki[1] * 100 / all)}%</b></li>`);
+      if (rpki[2]) items.push(`<li><span>${esc(t("health_rov", { n: num(rpki[2]) }))}</span></li>`);
+    }
+    if (h.mo) items.push(`<li><span>${esc(t("health_moas", { n: num(h.mo) }))}</span></li>`);
+    if (!h.n6) items.push(`<li><span>${esc(t("health_v6"))}</span></li>`);
+    if (h.d) items.push(`<li><span>${esc(t("health_age", { date: h.d, n: String(Math.max(0, new Date().getUTCFullYear() - +h.d.slice(0, 4))) }))}</span></li>`);
+    if (nb && nb.n && nb.n.up === 1 && (nb.up || [])[0]) {
+      const a = nb.up[0][0];
+      items.push(`<li><span>${esc(t("health_up1", { as: "" }))}<a href="${HOME}AS${a}">AS${a}</a></span></li>`);
+    }
+    return items.length ? `<div class="sec-h"><span>${esc(t("health_h"))}</span></div><ul class="hl healthl">${items.join("")}</ul>` : "";
+  };
 
   /* ---------- home: the visitor's own address ---------- */
   // Who the visitor is (address, AS, organization, location) comes from the 1ms.dog shell's /_ms/me, Cloudflare's view
@@ -183,6 +203,11 @@ import { regionName, flagCode } from "./region.mjs";
       const ipqs = meta("ipqs"), egress = meta("egress");
       if (ipqs) Object.assign($("#lnIpqs"), { href: `${ipqs}${HOME}?ip=${encodeURIComponent(me.ip)}`, hidden: false });
       if (egress) Object.assign($("#lnEgress"), { href: egress + HOME, hidden: false });
+      // the visitor's network at a glance: RPKI from the history, the rest from the lookup
+      if (hit && hit.asn && $("#meHealth")) getJ(`/api/hist/${hit.asn}`).then(h => {
+        const html = healthHTML({ n6: hit.n6, mo: hit.shared, d: hit.assigned }, h && h.rpki, null);
+        if (html) { $("#meHealth").innerHTML = html; $("#meHealth").hidden = false; }
+      }).catch(() => {});
     };
     const fallback = () => getJ("/api/me").then(r => {
       const cf = r.cf || {};
@@ -197,9 +222,16 @@ import { regionName, flagCode } from "./region.mjs";
 
   /* ---------- an AS ---------- */
   if (D.page === "as" && D.asn != null) {
+    const healthBox = $("#health");
+    const drawHealth = () => {
+      if (!healthBox) return;
+      const html = healthHTML(D.health, live.hist && live.hist.rpki, live.nb);
+      if (html) { healthBox.innerHTML = html; healthBox.hidden = false; }
+    };
     getJ(`/api/rdap/as/${D.asn}`).then(r => { live.rdap = r; fillRows({ org: esc(r.org || r.name), abuse: mail(r.abuse), upd: esc(r.upd || r.reg) }); }).catch(() => fillRows({}));
     if ($(".nb")) getJ(`/api/nb/${D.asn}`, 15000).then(r => {
       live.nb = r;
+      drawHealth();
       for (const k of ["up", "down", "un"]) {
         const col = $(`[data-nb="${k}"]`), list = r[k] || [];
         col.querySelector(".n").textContent = r.n && r.n[k] ? num(r.n[k]) : "";
@@ -214,6 +246,7 @@ import { regionName, flagCode } from "./region.mjs";
     if ($("#hist")) getJ(`/api/hist/${D.asn}`).then(h => {
       if (!h || !h.since) return;
       live.hist = h;
+      drawHealth();
       const px = Object.entries(h.px || {}), last = (h.n || []).slice(-1)[0];
       $("#hN").textContent = last ? `IPv4 ${num(last[1])} · IPv6 ${num(last[2])}` : "";
       $("#hSpark").innerHTML = spark(h);
@@ -274,6 +307,73 @@ import { regionName, flagCode } from "./region.mjs";
       net: r.name ? esc(r.name) + (r.range ? `<span class="m mono"> · ${esc(r.range)}</span>` : "") : "",
       org: r.org ? esc(r.org) + (r.cc ? " " + flag(r.cc) : "") : "", ptr: r.ptr ? `<span class="mono">${esc(r.ptr)}</span>` : "", abuse: mail(r.abuse),
     }); }).catch(() => fillRows({}));
+  }
+
+  /* ---------- tools: bulk lookup and prefix merging, both in the browser ---------- */
+  if (D.page === "tools") {
+    const lines = s => String(s || "").split(/[\s,;]+/).map(x => x.trim()).filter(Boolean);
+    // a list of addresses or prefixes → one table row each; the lookups run a few at a time
+    const bIn = $("#batchIn"), bOut = $("#batchOut"), bMsg = $("#batchMsg"), bCsv = $("#batchCsv");
+    let rows = [];
+    $("#batchGo").onclick = async () => {
+      const list = lines(bIn.value).slice(0, 200);
+      rows = []; bOut.innerHTML = ""; bCsv.disabled = true; bMsg.textContent = "";
+      if (!list.length) { bMsg.textContent = t("tools_empty"); return; }
+      const tbl = document.createElement("table");
+      tbl.className = "tbl";
+      tbl.innerHTML = `<thead><tr><th>${esc(t("k_ip"))}</th><th>${esc(t("k_as"))}</th><th>${esc(t("k_pfx"))}</th><th>${esc(t("k_cc"))}</th></tr></thead><tbody></tbody>`;
+      const tb = tbl.querySelector("tbody");
+      bOut.appendChild(tbl);
+      const one = q => {
+        const tr = tb.insertRow();
+        tr.innerHTML = `<td class="mono">${esc(q)}</td><td colspan="3"><i class="skl"></i></td>`;
+        return getJ(`/api/ip/${encodeURIComponent(q)}`).then(r => {
+          if (!r || r.error) throw new Error(r && r.error);
+          tr.cells[1].innerHTML = r.asn ? asLink(r.asn, r.name || r.holder, r.cc) : NA;
+          tr.cells[1].colSpan = 1;
+          tr.insertCell().innerHTML = r.prefix ? `<span class="mono">${esc(r.prefix)}</span>` : NA;
+          tr.insertCell().innerHTML = r.cc ? `${flag(r.cc)} ${esc(r.cc)}` : NA;
+          rows.push([q, r.asn ? "AS" + r.asn : "", r.name || r.holder || "", r.prefix || "", r.cc || ""]);
+        }, () => { rows.push([q, "", "", "", ""]); tr.cells[1].innerHTML = NA; tr.cells[1].colSpan = 4; });
+      };
+      for (let i = 0; i < list.length; i += 8) await Promise.all(list.slice(i, i + 8).map(one));
+      const bad = rows.filter(r => !r[1]).length;
+      bCsv.disabled = rows.length === bad;
+      bMsg.textContent = bad ? t("tools_bad", { n: num(bad) }) : "";
+    };
+    bCsv.onclick = () => {
+      const cell = v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+      const csv = ["ip,asn,name,prefix,cc", ...rows.map(r => r.map(cell).join(","))].join("\n") + "\n";
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), download: "asn-lookup.csv" });
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+    // prefixes in, the shortest set of CIDR blocks covering them out (IPv4 first, then IPv6)
+    const cIn = $("#cidrIn"), cOut = $("#cidrOut"), cMsg = $("#cidrMsg"), cCopy = $("#cidrCopy");
+    let merged = [];
+    $("#cidrGo").onclick = () => {
+      const bad = [], groups = { 4: [], 6: [] };
+      for (const s of lines(cIn.value)) {
+        const c = parseCidr(s);
+        if (c) groups[c.f].push(c); else bad.push(s);
+      }
+      merged = [];
+      for (const f of [4, 6]) {
+        const big = f === 6;
+        const spans = groups[f].map(c => [big ? v6big(c.ip) : v4num(c.ip), big ? v6big(c.ip) + (1n << BigInt(128 - c.len)) - 1n : v4num(c.ip) + 2 ** (32 - c.len) - 1])
+          .sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+        const un = [];
+        for (const span of spans) {
+          const last = un[un.length - 1];
+          if (last && (big ? span[0] <= last[1] + 1n : span[0] <= last[1] + 1)) { if (span[1] > last[1]) last[1] = span[1]; }
+          else un.push(span.slice());
+        }
+        for (const [a, b] of un) merged.push(...(big ? rangeToCidrs6(a, b) : rangeToCidrs4(a, b)));
+      }
+      cOut.innerHTML = merged.length ? `<pre class="txt mono out">${esc(merged.join("\n"))}</pre>` : "";
+      cMsg.textContent = bad.length ? t("tools_bad", { n: num(bad.length) }) : "";
+      cCopy.disabled = !merged.length;
+    };
+    cCopy.onclick = () => copy(merged.join("\n") + "\n").then(() => toast(t("copied")), () => toast(t("na")));
   }
 
   /* ---------- reporting a problem (the host's dialog; 1ms-shell docs/tool-contract.md, "报告问题") ---------- */

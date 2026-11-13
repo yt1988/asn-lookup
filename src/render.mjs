@@ -103,7 +103,9 @@ export function homeMain(T, lang) {
     <div class="sec-h"><span>${esc(T("me_h"))}</span><a class="eg" id="meMore" href="${home}">${esc(T("me_more"))}</a></div>
     ${kv([[T("k_ip"), SKL, ' id="meIp"'], [T("k_as"), SKL, ' id="meAs"'], [T("k_pfx"), SKL, ' id="mePfx"'], [T("k_loc"), SKL, ' id="meLoc"']])}
     <p class="links" id="meLinks"><a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener">${esc(T("ln_ipqs"))}${EXT}</a><a class="xt" id="lnEgress" hidden target="_blank" rel="noopener">${esc(T("ln_egress"))}${EXT}</a>&nbsp;</p>
+    <div class="health" id="meHealth" hidden></div>
   </div>
+  <p class="links"><a href="${home}tools">${esc(T("tools_link"))}</a><a href="${home}top">${esc(T("h_top"))}</a><a href="${home}moas">${esc(T("h_moas"))}</a><a href="${home}country">${esc(T("h_countries"))}</a></p>
 </section>
 <section class="card pop">
   <h2>${esc(T("pop_h"))}</h2>
@@ -165,6 +167,7 @@ export function asPage({ T, lang, site, asn, rec, meta }) {
   </div>
   <p class="lead">${lead.trim()}</p>
   <div class="cols">${kv(rows)}<div>${kv(live)}</div></div>
+  <div class="health" id="health" hidden></div>
   ${HOME_L(T, home)}
 </section>
 ${routed ? `<section class="card nb"><h2>${esc(T("h_nb"))}</h2><div class="nbs">${nbCol("up")}${nbCol("down")}${nbCol("un")}</div><p class="note m">${esc(T("nb_note"))}</p></section>
@@ -182,13 +185,118 @@ ${sib}
   // an AS page is indexable even when nothing is announced from it (no data at all, or only below the visibility
   // threshold): someone searching the number should find who holds it (1ms-shell#99). Only the 404 above is noindex.
   return { status: 200, rest: as, title, desc, main, graph,
-    foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }), data: { asn, x: !!rec.x, card } };
+    foot: fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) }),
+    data: { asn, x: !!rec.x, card, health: { n4, n6, c4: rec.c4 || 0, mo: rec.mo || 0, d: rec.d || "", r: rec.r || "" } } };
+}
+
+/* ---------- search results, hosts, leaderboards, countries and registries ---------- */
+
+const asRows = (home, lang, rows, shown, fmtVal) => `<ul class="chips">${rows.slice(0, shown).map(([a, h, cc, v]) =>
+  `<li>${asLink(home, a, knownName(a, lang) || h, cc)}${v != null ? `<span class="n">${fmtVal(v)}</span>` : ""}</li>`).join("")}</ul>`;
+
+// the networks whose name or holder matched a search term (src/worker.js, /find)
+export function findPage({ T, lang, site, q, hits, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]);
+  const title = fill(T("find_title"), { q }).slice(0, 120), desc = fill(T("find_desc"), { q });
+  const rows = hits.map(x => [x.asn, x.h, x.cc, F.count(T, "n_pfx", (x.n4 || 0) + (x.n6 || 0))]);
+  const main = `<section class="hero card">
+  ${SEARCH(T, home, q)}
+  <h1>${esc(fill(T("find_h"), { q }))}</h1>
+  <p class="lead">${hits.length ? esc(fill(T("find_n"), { n: F.num(hits.length) })) : esc(fill(T("find_none"), { q }))}</p>
+  ${HOME_L(T, home)}
+</section>
+${hits.length ? `<section class="card pop">${asRows(home, lang, rows, 50, v => v)}</section>` : ""}`;
+  return { status: 200, rest: "find", title, desc, robots: "noindex, follow", main, data: { page: "find" }, foot: footOf(T, meta) };
+}
+
+// every address a domain resolves to, each with the network that announces it
+export function hostPage({ T, lang, site, host, rows, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]);
+  const nets = new Set(rows.map(r => r.asn).filter(Boolean)).size;
+  const title = fill(T("host_title"), { host }).slice(0, 120);
+  const desc = rows.length ? fill(T("host_lead"), { host, n: F.num(rows.length), m: F.num(nets) }) : fill(T("host_none"), { host });
+  const list = rows.map(r => `<li>${r.asn
+    ? `<a class="mono" href="${home}ip/${esc(r.ip)}">${esc(r.ip)}</a><span class="hrow">${asLink(home, r.asn, knownName(r.asn, lang) || (r.rec && r.rec.h) || "", r.rec && r.rec.cc)}${r.pfx ? `<span class="mono m">${esc(r.pfx)}</span>` : ""}</span>`
+    : `<a class="mono" href="${home}ip/${esc(r.ip)}">${esc(r.ip)}</a><span class="m">${esc(T("ip_none"))}</span>`}</li>`).join("");
+  const main = `<section class="hero card">
+  ${SEARCH(T, home, host)}
+  <h1 class="mono">${esc(host)}</h1>
+  <p class="lead">${rows.length ? esc(desc) : esc(fill(T("host_none"), { host }))}</p>
+  ${HOME_L(T, home)}
+</section>
+${rows.length ? `<section class="card pop"><h2>${esc(fill(T("h_host"), { host }))}</h2><ul class="hl">${list}</ul></section>` : ""}`;
+  return { status: 200, rest: "host/" + host, title, desc, robots: "noindex, follow", main, data: { page: "host", host }, foot: footOf(T, meta) };
+}
+
+// /top: the largest, the oldest, the newest, the ones with the most shared prefixes
+export function topPage({ T, lang, site, top, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]);
+  const title = T("h_top"), desc = T("top_note");
+  const section = (k, fmtVal) => top[k] && top[k].length ? `<section class="card pop"><h2>${esc(T("top_" + k))}<span class="n">${F.num(top[k].length)}</span></h2>${asRows(home, lang, top[k], 100, fmtVal)}</section>` : "";
+  const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>${HOME_L(T, home)}</section>
+${section("size", v => F.count(T, "n_addr", v, true))}${section("pfx", v => F.count(T, "n_pfx", v))}${section("moas", v => F.count(T, "n_pfx", v))}${section("old", v => v)}${section("new", v => v)}`;
+  return { status: 200, rest: "top", title, desc, main, data: { page: "top" }, foot: footOf(T, meta) };
+}
+
+// /moas: the IPv4 prefixes more than one origin announces
+export function moasPage({ T, lang, site, moas, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]);
+  const title = T("h_moas"), desc = fill(T("moas_note"), { n: F.num(moas.all) });
+  const rows = (moas.list || []).map(([p, asns]) => `<li><a class="mono" href="${home}ip/${esc(p)}">${esc(p)}</a><span>${asns.slice(0, 6).map(a => asLink(home, a, knownName(a, lang))).join(" ")}${asns.length > 6 ? ` <span class="m">+${asns.length - 6}</span>` : ""}</span></li>`).join("");
+  const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>${HOME_L(T, home)}</section>
+${rows ? `<section class="card pop"><ul class="hl moas">${rows}</ul></section>` : ""}`;
+  return { status: 200, rest: "moas", title, desc, main, data: { page: "moas" }, foot: footOf(T, meta) };
+}
+
+// /country/CN and /rir/ripe: the networks registered there, biggest first
+export function browsePage({ T, lang, site, kind, key, rows, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]), cc = kind === "cc";
+  const name = cc ? F.country(key) || key : key, title = fill(T(cc ? "cc_title" : "rir_title"), { cc: name, rir: name }).slice(0, 120);
+  const total = rows.reduce((s, r) => s + (r[3] || 0), 0);
+  const desc = fill(T(cc ? "cc_desc" : "rir_desc"), { cc: name, rir: name });
+  const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(fill(T(cc ? "h_country" : "h_rir"), { cc: name, rir: name }))}</h1>
+  <p class="lead">${esc(fill(T("cc_n"), { n: F.num(rows.length), a: F.count(T, "n_addr", total, true) }))}</p>${HOME_L(T, home)}</section>
+  <section class="card pop">${asRows(home, lang, rows, 300, v => F.count(T, "n_addr", v, true))}${rows.length > 300 ? `<p class="note m">${esc(fill(T("list_more"), { n: F.num(rows.length - 300) }))}</p>` : ""}</section>`;
+  return { status: 200, rest: (cc ? "country/" : "rir/") + key, title, desc, main, data: { page: cc ? "cc" : "rir", key }, foot: footOf(T, meta) };
+}
+
+// /country and /rir: the index of those pages
+export function browseIndexPage({ T, lang, site, kind, rows, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]), cc = kind === "cc";
+  const title = T(cc ? "h_countries" : "h_rirs"), desc = T(cc ? "countries_note" : "rirs_note");
+  const list = rows.map(([k, n, a]) => `<li><a href="${home}${cc ? "country/" + k : "rir/" + k.toLowerCase()}">${esc(cc ? F.country(k) || k : k)}</a><span class="n">${F.num(n)}</span></li>`).join("");
+  const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>${HOME_L(T, home)}</section>
+<section class="card pop"><ul class="hl">${list}</ul></section>`;
+  return { status: 200, rest: cc ? "country" : "rir", title, desc, main, data: { page: cc ? "cc" : "rir" }, foot: footOf(T, meta) };
+}
+
+const footOf = (T, meta) => fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) });
+
+// /tools: bulk lookup and prefix merging, both in the browser against the same JSON API (src/app.js)
+export function toolsPage({ T, lang, site, meta }) {
+  const home = path(SLUG[lang]);
+  const area = (id, label) => `<textarea id="${id}" class="txt" rows="6" spellcheck="false" aria-label="${esc(label)}" placeholder="8.8.8.8&#10;1.1.1.0/24&#10;2001:4860:4860::8888"></textarea>`;
+  const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(T("h_tools"))}</h1><p class="lead">${esc(T("tools_note"))}</p>
+  <p class="links"><a href="${home}top">${esc(T("h_top"))}</a><a href="${home}moas">${esc(T("h_moas"))}</a><a href="${home}country">${esc(T("h_countries"))}</a></p>${HOME_L(T, home)}</section>
+<section class="card pop tool" id="toolBatch">
+  <h2>${esc(T("tools_batch"))}</h2><p class="m">${esc(T("tools_batch_note"))}</p>
+  ${area("batchIn", T("tools_batch"))}
+  <div class="row"><button class="btn pri" id="batchGo" type="button">${esc(T("tools_run"))}</button><button class="btn sm" id="batchCsv" type="button" disabled>${esc(T("tools_csv"))}</button></div>
+  <p class="note m" id="batchMsg"></p><div id="batchOut"></div>
+</section>
+<section class="card pop tool" id="toolCidr">
+  <h2>${esc(T("tools_cidr"))}</h2><p class="m">${esc(T("tools_cidr_note"))}</p>
+  ${area("cidrIn", T("tools_cidr"))}
+  <div class="row"><button class="btn pri" id="cidrGo" type="button">${esc(T("tools_merge"))}</button><button class="btn sm" id="cidrCopy" type="button" disabled>${esc(T("copy"))}</button></div>
+  <p class="note m" id="cidrMsg"></p><div id="cidrOut"></div>
+</section>`;
+  return { status: 200, rest: "tools", title: T("h_tools"), desc: T("tools_note"), main, data: { page: "tools" }, foot: footOf(T, meta) };
 }
 
 /* ---------- an address ---------- */
 
 // hit: { ip, asn, rec (the AS's record), pfx (the announced prefix holding it), range } or { ip, private } or { ip } (not routed)
-export function ipPage({ T, lang, site, hit, host, meta }) {
+export function ipPage({ T, lang, site, hit, host, meta, alloc }) {
   const F = fmt(lang), slug = SLUG[lang], home = path(slug), ip = hit.ip;
   const name = hit.asn ? asName(hit.asn, hit.rec, lang) : "", cc = hit.rec ? F.country(hit.rec.cc) : "";
   const as = hit.asn ? "AS" + hit.asn : "";
@@ -200,6 +308,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
     [T("k_pfx"), hit.pfx ? `<span class="mono">${esc(hit.pfx)}</span>` : "–"],
     [T("k_range"), `<span class="mono">${esc(hit.range || "–")}</span>`],
     [T("k_ascc"), hit.rec && hit.rec.cc ? `${flag(hit.rec.cc)} ${esc(cc)}` : "–"],
+    ...(alloc ? [[T("k_alloc"), esc(alloc.rir) + (alloc.day ? ` <span class="m mono">· ${esc(alloc.day)}</span>` : "")]] : []),
   ] : [];
   const live = hit.private ? [] : [[T("k_net"), SKL, ' data-r="net"'], [T("k_org"), SKL, ' data-r="org"'], [T("k_ptr"), SKL, ' data-r="ptr"'], [T("k_abuse"), SKL, ' data-r="abuse"'],
     // the announced prefix's history (history/), filled in or taken away by src/app.js
@@ -213,7 +322,7 @@ export function ipPage({ T, lang, site, hit, host, meta }) {
   </div>
   <p class="lead">${hit.asn ? fill(T("ip_lead"), { as, name: esc(name) }).replace(CJK_SP, "$1") : esc(desc)}</p>
   ${rows.length || live.length ? `<div class="cols">${rows.length ? kv(rows) : ""}<div>${kv(live)}</div></div>` : ""}
-  <p class="links">${hit.private ? "" : `<a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}${EXT}</a>`}${one ? `<a class="xt" id="lnReach" hidden target="_blank" rel="noopener">${esc(T("ln_reach"))}${EXT}</a>` : ""}${ip.includes(":") ? `<a class="xt" id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}${EXT}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
+  <p class="links">${hit.private ? "" : `<a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener" data-ip="${esc(ip)}">${esc(T("ln_ipqs"))}${EXT}</a>`}${one ? `<a class="xt" id="lnReach" hidden target="_blank" rel="noopener">${esc(T("ln_reach"))}${EXT}</a>` : ""}${ip.includes(":") ? `<a class="xt" id="lnIpv6" hidden target="_blank" rel="noopener">${esc(T("ln_ipv6"))}${EXT}</a>` : ""}${host ? `<a href="${home}host/${esc(host)}">${esc(fill(T("host_more"), { host }))}</a>` : ""}${hit.asn ? `<a href="${home}${as}">${esc(fill(T("ip_as_more"), { as }))}</a>` : ""}&nbsp;</p>
   ${HOME_L(T, home)}
 </section>`;
   const graph = [{ "@type": "WebPage", name: title, description: desc, url: site + home + "ip/" + ip, inLanguage: lang, isPartOf: { "@id": site + "/#app" } }, app(T, lang, site)];

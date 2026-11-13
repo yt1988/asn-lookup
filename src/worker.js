@@ -14,7 +14,7 @@
 import { STRINGS } from "./strings.mjs";
 import { LANGS, BY_SLUG, SLUG } from "./langs.mjs";
 import { family, canon, isPublic, v4num, v6big, v4str, v6str, find4, find6, parseCidr } from "./ip.mjs";
-import { asPage, ipPage, head, esc, path } from "./render.mjs";
+import { asPage, ipPage, findPage, hostPage, topPage, moasPage, browsePage, browseIndexPage, toolsPage, head, esc, path } from "./render.mjs";
 import { PREPAINT, csp, HEADERS } from "./csp.mjs";
 import { knownName } from "./popular.mjs";
 
@@ -74,6 +74,77 @@ async function lookup(env, o, ip) {
   return { ip, asn: hit.asn, rec, range, pfx };
 }
 
+// A search by name: data/find holds word → ASNs, one shard fetched per query (scripts/data.mjs). Every word of the
+// query has to appear in the network's name, its holder or its well-known name; the biggest networks come first.
+async function findByName(env, o, q) {
+  const words = String(q || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(w => w.length >= 2).slice(0, 4);
+  if (!words.length) return [];
+  const longest = [...words].sort((a, b) => b.length - a.length)[0], k = longest.slice(0, 2);
+  if (!/^[a-z0-9]{2}$/.test(k)) return [];
+  const shard = (await asset(env, o, `/data/find/${k}.json`)) || {};
+  const asns = new Set();
+  for (const t in shard) if (t.startsWith(longest)) for (const a of shard[t]) asns.add(a);
+  const out = [];
+  let checked = 0;
+  for (const a of asns) {
+    if (++checked > 150) break;
+    const rec = await asRec(env, o, a);
+    if (!rec) continue;
+    const hay = ((rec.h || "") + " " + (rec.n || "") + " " + knownName(a, "en")).toLowerCase();
+    if (!words.every(w => hay.includes(w))) continue;
+    out.push({ asn: a, h: rec.h || "", n: rec.n || "", cc: rec.cc || "", n4: rec.n4 || 0, n6: rec.n6 || 0 });
+  }
+  return out.sort((x, y) => (y.n4 + y.n6) - (x.n4 + x.n6) || x.asn - y.asn).slice(0, 30);
+}
+
+// A domain in a URL or in the search box → the domain, or "" when it isn't one
+function hostOf(s) {
+  let host = String(s || "").toLowerCase().replace(/^[a-z]+:\/\//, "").replace(/[/?#].*$/, "").replace(/:\d+$/, "").replace(/\.$/, "");
+  try { host = new URL("http://" + host).hostname; } catch (e) { return ""; }
+  return DOMAIN.test(host) ? host : "";
+}
+
+// Every address a domain resolves to, each looked up: a site can sit on several networks
+async function hostRows(env, o, host) {
+  const ips = [];
+  for (const [type, t] of [["A", 1], ["AAAA", 28]]) {
+    const j = await doh(host, type).catch(() => null);
+    for (const a of (j && j.Answer) || []) if (a.type === t && family(a.data)) ips.push(canon(a.data));
+  }
+  const uniq = [...new Set(ips)].slice(0, 12);
+  return Promise.all(uniq.map(ip => lookup(env, o, ip).then(h => ({ ...(h || { ip }) }))));
+}
+
+// The registry block an address was allocated in (data/al4, data/al6, from the five RIRs' delegated files): the
+// address page shows it without asking RDAP.
+async function allocOf(env, o, ip) {
+  const f = family(ip);
+  if (f === 4) {
+    const n = v4num(ip), sh = await asset(env, o, `/data/al4/${n >>> 24}.bin`, "bin");
+    if (!sh) return null;
+    let lo = 0, hi = sh.length / 4 - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1, i = mid * 4;
+      if (n < sh[i]) hi = mid - 1; else if (n > sh[i + 1]) lo = mid + 1;
+      else return { rir: RIR_LIST[sh[i + 2]], day: sh[i + 3] };
+    }
+    return null;
+  }
+  if (f !== 6) return null;
+  const big = v6big(ip), sh = await asset(env, o, `/data/al6/${Number(big >> 112n).toString(16)}.bin`, "bin");
+  if (!sh) return null;
+  const a = [Number((big >> 96n) & 0xffffffffn), Number((big >> 64n) & 0xffffffffn)];
+  const cmp = i => a[0] !== sh[i] ? (a[0] < sh[i] ? -1 : 1) : a[1] !== sh[i + 1] ? (a[1] < sh[i + 1] ? -1 : 1) : 0;
+  let lo = 0, hi = sh.length / 6 - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1, i = mid * 6;
+    if (cmp(i) < 0) hi = mid - 1; else if (cmp(i + 2) > 0) lo = mid + 1;
+    else return { rir: RIR_LIST[sh[i + 4]], day: sh[i + 5] };
+  }
+  return null;
+}
+const dayStr = d => d ? new Date(d * 864e5).toISOString().slice(0, 10) : "";
+
 /* ---------- live parts ---------- */
 
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
@@ -124,6 +195,7 @@ const RDAP = { Accept: "application/rdap+json, application/json" };
 // rdap.org's bootstrap redirect, so one registry unreachable from Cloudflare (ARIN, HTTP 525, 2026-11) leaves the others
 const RIRS = { ARIN: "https://rdap.arin.net/registry/", APNIC: "https://rdap.apnic.net/", RIPE: "https://rdap.db.ripe.net/",
   LACNIC: "https://rdap.lacnic.net/rdap/", AFRINIC: "https://rdap.afrinic.net/rdap/" };
+const RIR_LIST = ["APNIC", "RIPE", "ARIN", "LACNIC", "AFRINIC"];
 async function rdap(rir, q) {
   let err;
   for (const base of new Set([RIRS[rir], RIRS.ARIN, "https://rdap.org/"].filter(Boolean))) {
@@ -180,15 +252,22 @@ async function resolve(host) {
 }
 async function search(s, home) {
   s = String(s || "").trim();
-  let m = /^as\s*(\d{1,10})$/i.exec(s) || /^(\d{1,10})$/.exec(s);
-  if (m && +m[1] < 2 ** 32 && !(family(s) === 4)) return `${home}AS${+m[1]}`;
+  // an AS number, plain or in asdot form (AS1.10 and 1.10 are both 65546)
+  let m = /^as\s*(\d{1,10})(?:\.(\d{1,5}))?$/i.exec(s) || (!family(s) && /^(\d{1,10})(?:\.(\d{1,5}))?$/.exec(s));
+  if (m && +(m[2] || 0) < 65536) {
+    const n = +m[1] * (m[2] ? 65536 : 1) + +(m[2] || 0);
+    if (n < 2 ** 32) return `${home}AS${n}`;
+  }
   const c = parseCidr(s);
   if (c) return `${home}ip/${c.len === (c.f === 4 ? 32 : 128) ? canon(s.split("/")[0]) : c.ip + "/" + c.len}`;
-  let host = s.toLowerCase().replace(/^[a-z]+:\/\//, "").replace(/[/?#].*$/, "").replace(/:\d+$/, "").replace(/\.$/, "");
-  try { host = new URL("http://" + host).hostname; } catch (e) {}
-  if (!DOMAIN.test(host)) return `${home}?e=bad&s=${encodeURIComponent(s.slice(0, 100))}`;
+  const host = hostOf(s);
+  if (!host) {
+    // not an address or a domain: a network name ("Cloudflare", "China Telecom")
+    if (/^[\d.:/]+$/.test(s) || s.length < 2) return `${home}?e=bad&s=${encodeURIComponent(s.slice(0, 100))}`;
+    return `${home}find?q=${encodeURIComponent(s.replace(/[<>"&]/g, "").slice(0, 60))}`;
+  }
   const ip = await resolve(host);
-  return ip ? `${home}ip/${canon(ip)}?host=${encodeURIComponent(host)}` : `${home}?e=dns&s=${encodeURIComponent(s.slice(0, 100))}`;
+  return ip ? `${home}host/${host}` : `${home}?e=dns&s=${encodeURIComponent(s.slice(0, 100))}`;
 }
 
 /* ---------- pages ---------- */
@@ -260,6 +339,15 @@ export default {
     }
     if ((m = /^\/api\/nb\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => neighbours(env, o, +m[1]));
     if ((m = /^\/api\/hist\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => history(env, +m[1]), untilRun());
+    if (p === "/api/find") return json(await findByName(env, o, (url.searchParams.get("q") || "").slice(0, 60)), 200, { "Cache-Control": "public, max-age=3600" });
+    if ((m = /^\/api\/host\/(.+)$/.exec(p))) {
+      const host = hostOf(m[1]);
+      if (!host) return json({ error: "not a domain" }, 400);
+      const rows = await hostRows(env, o, host);
+      return json({ host, rows: rows.map(r => ({ ip: r.ip, asn: r.asn || null, cc: (r.rec && r.rec.cc) || null, prefix: r.pfx || null })) }, 200, { "Cache-Control": "public, max-age=300" });
+    }
+    if (p === "/api/top") return json((await asset(env, o, "/data/top.json")) || {}, 200, { "Cache-Control": "public, max-age=3600" });
+    if (p === "/api/moas") return json((await asset(env, o, "/data/moas.json")) || {}, 200, { "Cache-Control": "public, max-age=3600" });
     if (p.startsWith("/api/")) return json({ error: "not found" }, 404);
 
     /* pages */
@@ -268,6 +356,43 @@ export default {
     const home = PATHS[lang], T = k => STRINGS[lang][k];
 
     if (p === "/q") return redirect(await search(url.searchParams.get("s"), home), 302);
+
+    // the pages that are not one AS or one address: search results, hosts, leaderboards, countries and registries
+    if (p === "/find") {
+      const q = (url.searchParams.get("q") || "").slice(0, 60), meta = await asset(env, o, "/data/meta.json");
+      return render(request, env, o, lang, site, findPage({ T, lang, site, q, hits: await findByName(env, o, q), meta }), "find");
+    }
+    if (p === "/tools") {
+      return render(request, env, o, lang, site, toolsPage({ T, lang, site, meta: await asset(env, o, "/data/meta.json") }), "tools");
+    }
+    if (p === "/top" || p === "/moas") {
+      const meta = await asset(env, o, "/data/meta.json");
+      const r = p === "/top" ? topPage({ T, lang, site, top: (await asset(env, o, "/data/top.json")) || {}, meta })
+        : moasPage({ T, lang, site, moas: (await asset(env, o, "/data/moas.json")) || { all: 0, list: [] }, meta });
+      return render(request, env, o, lang, site, r, p.slice(1));
+    }
+    if ((m = /^\/country(?:\/([A-Za-z]{2}))?\/?$/.exec(p))) {
+      const meta = await asset(env, o, "/data/meta.json");
+      if (!m[1]) return render(request, env, o, lang, site, browseIndexPage({ T, lang, site, kind: "cc", rows: (await asset(env, o, "/data/cc/index.json")) || [], meta }), "cc");
+      const cc = m[1].toUpperCase(), rows = await asset(env, o, `/data/cc/${cc}.json`);
+      if (!rows) return notFound();
+      return render(request, env, o, lang, site, browsePage({ T, lang, site, kind: "cc", key: cc, rows, meta }), "cc");
+    }
+    if ((m = /^\/rir(?:\/([A-Za-z]{2,7}))?\/?$/.exec(p))) {
+      const meta = await asset(env, o, "/data/meta.json");
+      if (!m[1]) return render(request, env, o, lang, site, browseIndexPage({ T, lang, site, kind: "rir", rows: (await asset(env, o, "/data/rir/index.json")) || [], meta }), "rir");
+      const rir = m[1].toUpperCase();
+      if (!RIR_LIST.includes(rir)) return notFound();
+      const rows = await asset(env, o, `/data/rir/${rir}.json`);
+      if (!rows) return notFound();
+      return render(request, env, o, lang, site, browsePage({ T, lang, site, kind: "rir", key: rir, rows, meta }), "rir");
+    }
+    if ((m = /^\/host\/(.+?)\/?$/.exec(p))) {
+      const host = hostOf(m[1]);
+      if (!host) return notFound();
+      const meta = await asset(env, o, "/data/meta.json");
+      return render(request, env, o, lang, site, hostPage({ T, lang, site, host, rows: await hostRows(env, o, host), meta }), "host");
+    }
 
     // A shared result: /r/1~<when shared, ms in base 36>~<the page: AS4134 or ip/…>. It is that page, today's data,
     // not indexed, with the share dialog's banner saying when it was shared. Anything unreadable is a 404.
@@ -300,7 +425,8 @@ export default {
       const hit = await lookup(env, o, c.ip);
       const hq = (url.searchParams.get("host") || "").toLowerCase();
       const host = DOMAIN.test(hq) ? hq : "";
-      const r = ipPage({ T, lang, site, hit: { ...hit, ip: want }, host, meta });
+      const al = await allocOf(env, o, c.ip);
+      const r = ipPage({ T, lang, site, hit: { ...hit, ip: want }, host, meta, alloc: al ? { rir: al.rir, day: dayStr(al.day) } : null });
       r.hostKey = host;
       return render(request, env, o, lang, site, share(r), "ip");
     }
@@ -313,5 +439,6 @@ function slim(hit, ip) {
   if (!hit) return { ip: ip || null, error: "not an IP address" };
   const r = hit.rec || {};
   return { ip: hit.ip, private: hit.private || undefined, asn: hit.asn || null, name: hit.asn ? knownName(hit.asn, "en") || r.h || null : null,
-    holder: r.n || null, cc: r.cc || null, prefix: hit.pfx || null, range: hit.range || null };
+    holder: r.n || null, cc: r.cc || null, prefix: hit.pfx || null, range: hit.range || null,
+    assigned: r.d || null, shared: r.mo || 0, n4: r.n4 || 0, n6: r.n6 || 0 };
 }

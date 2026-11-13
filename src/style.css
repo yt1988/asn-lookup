@@ -113,6 +113,26 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .ext a:hover { text-decoration: underline; }
 .foot { font-size: 12px; line-height: 1.6; padding: 0 4px; }
 
+/* the checkup strip (an AS page and the home page), the browse lists and the tools page */
+.health { border-top: 1px solid var(--line); padding-top: 10px; }
+.health:empty { display: none; }
+.health .sec-h { margin-bottom: 2px; }
+.healthl { display: flex; flex-wrap: wrap; gap: 2px 18px; }
+.healthl li { border-top: 0; padding: 1px 0; font-size: 12.5px; color: var(--muted); }
+.healthl li b { color: var(--fg); font-weight: 600; }
+.chips li .n { margin-left: auto; padding-left: 10px; color: var(--muted); font: 500 12px var(--f-num); }
+.hlist li .hrow { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.tool .m { font-size: 12.5px; }
+.txt { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: 13px/1.55 var(--f-num); resize: vertical; outline: none; }
+.txt:focus { border-color: var(--ink); }
+pre.txt { white-space: pre-wrap; overflow-wrap: anywhere; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tbl th, .tbl td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.tbl td.mono { font-family: var(--f-num); }
+@media (max-width: 720px) { .tbl th, .tbl td { padding: 6px 4px; } }
+
 /* dialogs (as in the other 1ms.dog tools) */
 .scrim { position: fixed; inset: 0; z-index: 40; background: #0006; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .dialog { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); max-width: 100%; max-height: calc(100vh - 32px); display: flex; flex-direction: column; box-shadow: 0 24px 64px var(--shadow); }

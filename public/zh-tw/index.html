@@ -41,7 +41,7 @@
 <meta name="twitter:description" content="免費的 IP 歸屬查詢與 ASN 查詢：輸入 IP，看它屬於哪家電信業者或雲端業者；輸入 AS 號碼，看這個網路的名稱、國家/地區、全部 IPv4 與 IPv6 網段、上游，以及同一家的其他 AS 號碼。資料每天更新。">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://asn.1ms.dog/#app","name":"ASN 查詢 · 1ms.dog","url":"https://asn.1ms.dog/zh-tw/","image":"https://asn.1ms.dog/og/zh-tw.png","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"免費的 IP 歸屬查詢與 ASN 查詢：輸入 IP，看它屬於哪家電信業者或雲端業者；輸入 AS 號碼，看這個網路的名稱、國家/地區、全部 IPv4 與 IPv6 網段、上游，以及同一家的其他 AS 號碼。資料每天更新。","inLanguage":"zh-TW","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"ASN 是什麼？","acceptedAnswer":{"@type":"Answer","text":"ASN（自治系統號碼）就是一個網路在網際網路上的編號。電信業者、雲端業者、大學、大公司，只要自己管理路由，就會有一個或幾個 AS 號碼。例如 AS3462 是中華電信 HiNet，AS13335 是 Cloudflare。 每個 AS 會對外「宣告」自己負責哪些網段（技術上叫前綴），其他網路依此把流量送過來，這套機制叫 BGP。AS 號碼由五大區域註冊機構分配：APNIC（亞太）、RIPE NCC（歐洲與中東）、ARIN（北美）、LACNIC（拉丁美洲）和 AFRINIC（非洲）。中國台灣的 AS 號碼通常經由 TWNIC 向 APNIC 申請。"}},{"@type":"Question","name":"怎麼查一個 IP 是誰的？","acceptedAnswer":{"@type":"Answer","text":"在輸入框填入 IP。頁面會告訴你：它屬於哪個 AS，也就是哪個網路；它在哪個網段裡；以及這段位址的登記資料：網路名稱、登記組織、濫用檢舉信箱和 DNS 反解。 負責路由的網路和登記的組織常常不是同一家。例如一家公司把伺服器放在雲端，IP 由雲端業者宣告，登記的卻可能是這家公司。想知道一個 IP 是機房 IP 還是家用寬頻、有沒有被濫用過，可以點結果下方的「這個 IP 乾不乾淨」。"}},{"@type":"Question","name":"顯示的國家/地區，就是 IP 所在的地方嗎？","acceptedAnswer":{"@type":"Answer","text":"不一定。這裡顯示的是這個網路登記的國家/地區，不是這個 IP 實際在哪裡。 雲端業者和 CDN 的機房遍布全球：登記在美國的網路，它的 IP 很可能就在香港或新加坡的機房。"}},{"@type":"Question","name":"資料從哪來？多久更新？","acceptedAnswer":{"@type":"Answer","text":"網段來自 RIPE NCC 的路由資訊服務（RIS）：它從全球數百個網路收集路由表，至少 10 個網路都看得到的網段才會收錄。IP 對應哪個 AS，使用的是 iptoasn.com 的公有領域資料。名稱、國家/地區和分配日期來自五大註冊機構公開的檔案。這些資料每天更新。 登記組織、濫用檢舉信箱、DNS 反解和相連的網路，是你開啟頁面時即時查詢的（RDAP、DNS、RIPEstat）。"}},{"@type":"Question","name":"上游、下游是什麼意思？","acceptedAnswer":{"@type":"Answer","text":"上游是這個 AS 付費連到網際網路其他地方所經過的網路；下游是透過它上網的網路，例如它的客戶。 這些關係是根據 RIPE 收集器看到的路徑推斷的。只在部分路徑上出現的網路，多半是直接互相交換流量的對等網路，另外列在「對等及其他」。每一欄依經過它的路徑數排序，最主要的連線排在最前面。"}},{"@type":"Question","name":"CN2、9929、CMI 是什麼？","acceptedAnswer":{"@type":"Answer","text":"它們是中國大陸三大電信業者的精品國際網路，買 VPS 時常會看到：AS4809 是中國電信 CN2（一般骨幹網路是 AS4134，俗稱 163），AS9929 是中國聯通精品網（一般的是 AS4837，俗稱 169），AS58453 是中國移動國際 CMI（境內網路是 AS9808）。 伺服器的流量走哪一條，要看回到你這邊的路由。用 traceroute 可以看到沿途經過的 AS 號碼。"}},{"@type":"Question","name":"可以複製網段清單嗎？","acceptedAnswer":{"@type":"Answer","text":"可以。「全部複製」會把這個 AS 的全部 IPv4 或 IPv6 網段複製下來，一行一個，可以直接貼進防火牆或代理分流規則。程式要用的話，/api/as/\u003cAS 號碼> 會回傳 JSON 格式的完整資料。"}}]}]}</script>
 <link rel="preload" href="/assets/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.b6ea9eaa25.css">
+<link rel="stylesheet" href="/assets/app.052d4e1a95.css">
 </head>
 <body>
 <div class="app">
@@ -70,15 +70,17 @@
 <section class="hero card">
   <h1>IP / ASN 查詢</h1>
   <form class="ask" action="/zh-tw/q" method="get" role="search" autocomplete="off">
-  <label class="sr" for="q" data-k="ph">8.8.8.8、AS3462 或網域</label>
-  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="8.8.8.8、AS3462 或網域" value="">
+  <label class="sr" for="q" data-k="ph">8.8.8.8、AS3462、Cloudflare 或網域</label>
+  <input id="q" name="s" type="text" spellcheck="false" maxlength="253" placeholder="8.8.8.8、AS3462、Cloudflare 或網域" value="">
   <button class="btn pri" type="submit">查詢</button>
 </form>
   <div class="me" id="me">
     <div class="sec-h"><span>你的 IP</span><a class="eg" id="meMore" href="/zh-tw/">詳細資訊 →</a></div>
     <ul class="kv"><li id="meIp"><span>IP</span><b><i class="skl"></i></b></li><li id="meAs"><span>所屬網路</span><b><i class="skl"></i></b></li><li id="mePfx"><span>所在網段</span><b><i class="skl"></i></b></li><li id="meLoc"><span>位置</span><b><i class="skl"></i></b></li></ul>
     <p class="links" id="meLinks"><a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener">這個 IP 乾不乾淨<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg></a><a class="xt" id="lnEgress" hidden target="_blank" rel="noopener">各個網站看到的是哪個 IP<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg></a>&nbsp;</p>
+    <div class="health" id="meHealth" hidden></div>
   </div>
+  <p class="links"><a href="/zh-tw/tools">批次查詢與前綴工具 →</a><a href="/zh-tw/top">排行榜</a><a href="/zh-tw/moas">被多個網路同時宣告的前綴</a><a href="/zh-tw/country">依國家/地區看網路</a></p>
 </section>
 <section class="card pop">
   <h2>常見網路</h2>
@@ -103,7 +105,7 @@
   </div>
 </div>
 <script type="application/json" id="data">{"lang":"zh-TW","paths":{"en":"/","zh-CN":"/zh-cn/","zh-TW":"/zh-tw/","ja":"/ja/","ko":"/ko/","es":"/es/","fr":"/fr/","de":"/de/","pt":"/pt/","ru":"/ru/"},"page":"home","rest":""}</script>
-<script src="/assets/l.zh-tw.a25d274226.js"></script>
-<script src="/assets/app.c6194d3551.js"></script>
+<script src="/assets/l.zh-tw.7336891af3.js"></script>
+<script src="/assets/app.16ba153225.js"></script>
 </body>
 </html>
