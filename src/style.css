@@ -121,6 +121,9 @@ h2 .n, .sec-h .n { color: var(--muted); font: 500 12px var(--f-num); letter-spac
 .healthl li { border-top: 0; padding: 1px 0; font-size: 12.5px; color: var(--muted); }
 .healthl li b { color: var(--fg); font-weight: 600; }
 .chips li .n { margin-left: auto; padding-left: 10px; color: var(--muted); font: 500 12px var(--f-num); }
+.lrow .asl { flex: 1 1 auto; min-width: 0; }
+.lrow .rk { flex: none; min-width: 2.4em; text-align: right; color: var(--muted); font: 500 12px var(--f-num); }
+.lrow .n { flex: none; margin-left: auto; color: var(--muted); font: 500 12px var(--f-num); white-space: nowrap; }
 .hlist li .hrow { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .tool .m { font-size: 12.5px; }
 .txt { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: 13px/1.55 var(--f-num); resize: vertical; outline: none; }

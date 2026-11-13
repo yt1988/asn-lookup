@@ -14,7 +14,7 @@
 import { STRINGS } from "./strings.mjs";
 import { LANGS, BY_SLUG, SLUG } from "./langs.mjs";
 import { family, canon, isPublic, v4num, v6big, v4str, v6str, find4, find6, parseCidr } from "./ip.mjs";
-import { asPage, ipPage, findPage, hostPage, topPage, moasPage, browsePage, browseIndexPage, toolsPage, head, esc, path } from "./render.mjs";
+import { asPage, ipPage, findPage, hostPage, topPage, moasPage, todayPage, browsePage, browseIndexPage, toolsPage, head, esc, path } from "./render.mjs";
 import { PREPAINT, csp, HEADERS } from "./csp.mjs";
 import { knownName } from "./popular.mjs";
 
@@ -238,6 +238,15 @@ function untilRun(now = Date.now()) {
   const d = new Date(now), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 4, 30);
   return Math.max(600, Math.round(((next > now ? next : next + DAY * 1000) - now) / 1000));
 }
+// The history run's own totals (history/meta.json), for /today: kept in this isolate until the next run's files are in,
+// the same deadline as the AS files; a failed fetch is retried on the next request.
+let histMeta = { exp: 0, v: null };
+async function historyMeta(env) {
+  const base = env.HISTORY_URL ?? HISTORY;
+  if (!base) return null;
+  if (histMeta.v && Date.now() < histMeta.exp) return histMeta.v;
+  try { const v = await getJSON(`${base}meta.json`, 6000, {}, true); histMeta = { exp: Date.now() + untilRun() * 1000, v }; return v; } catch { return null; }
+}
 
 /* ---------- search ---------- */
 
@@ -250,7 +259,7 @@ async function resolve(host) {
   }
   return null;
 }
-async function search(s, home) {
+export async function search(s, home) {
   s = String(s || "").trim();
   // an AS number, plain or in asdot form (AS1.10 and 1.10 are both 65546)
   let m = /^as\s*(\d{1,10})(?:\.(\d{1,5}))?$/i.exec(s) || (!family(s) && /^(\d{1,10})(?:\.(\d{1,5}))?$/.exec(s));
@@ -361,6 +370,13 @@ export default {
     if (p === "/find") {
       const q = (url.searchParams.get("q") || "").slice(0, 60), meta = await asset(env, o, "/data/meta.json");
       return render(request, env, o, lang, site, findPage({ T, lang, site, q, hits: await findByName(env, o, q), meta }), "find");
+    }
+    if (p === "/today") {
+      const meta = await asset(env, o, "/data/meta.json"), hist = await historyMeta(env);
+      const top = (await asset(env, o, "/data/top.json")) || {};
+      const since = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10);
+      const newest = (top.new || []).filter(r => r[3] >= since).slice(0, 20);
+      return render(request, env, o, lang, site, todayPage({ T, lang, site, hist, newest, meta }), "today");
     }
     if (p === "/tools") {
       return render(request, env, o, lang, site, toolsPage({ T, lang, site, meta: await asset(env, o, "/data/meta.json") }), "tools");

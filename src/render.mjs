@@ -105,7 +105,7 @@ export function homeMain(T, lang) {
     <p class="links" id="meLinks"><a class="xt" id="lnIpqs" hidden target="_blank" rel="noopener">${esc(T("ln_ipqs"))}${EXT}</a><a class="xt" id="lnEgress" hidden target="_blank" rel="noopener">${esc(T("ln_egress"))}${EXT}</a>&nbsp;</p>
     <div class="health" id="meHealth" hidden></div>
   </div>
-  <p class="links"><a href="${home}tools">${esc(T("tools_link"))}</a><a href="${home}top">${esc(T("h_top"))}</a><a href="${home}moas">${esc(T("h_moas"))}</a><a href="${home}country">${esc(T("h_countries"))}</a></p>
+  <p class="links"><a href="${home}today">${esc(T("h_today"))}</a><a href="${home}tools">${esc(T("tools_link"))}</a><a href="${home}top">${esc(T("h_top"))}</a><a href="${home}moas">${esc(T("h_moas"))}</a><a href="${home}country">${esc(T("h_countries"))}</a></p>
 </section>
 <section class="card pop">
   <h2>${esc(T("pop_h"))}</h2>
@@ -191,8 +191,9 @@ ${sib}
 
 /* ---------- search results, hosts, leaderboards, countries and registries ---------- */
 
-const asRows = (home, lang, rows, shown, fmtVal) => `<ul class="chips">${rows.slice(0, shown).map(([a, h, cc, v]) =>
-  `<li>${asLink(home, a, knownName(a, lang) || h, cc)}${v != null ? `<span class="n">${fmtVal(v)}</span>` : ""}</li>`).join("")}</ul>`;
+// a row per network: rank (leaderboards), name and country, then the figure it is ranked by
+const asRows = (home, lang, rows, shown, fmtVal, ranked = false) => `<ol class="hl lrow">${rows.slice(0, shown).map(([a, h, cc, v], i) =>
+  `<li>${ranked ? `<span class="rk">${i + 1}</span>` : ""}${asLink(home, a, knownName(a, lang) || h, cc)}<span class="n">${fmtVal(v)}</span></li>`).join("")}</ol>`;
 
 // the networks whose name or holder matched a search term (src/worker.js, /find)
 export function findPage({ T, lang, site, q, hits, meta }) {
@@ -232,7 +233,7 @@ ${rows.length ? `<section class="card pop"><h2>${esc(fill(T("h_host"), { host })
 export function topPage({ T, lang, site, top, meta }) {
   const F = fmt(lang), home = path(SLUG[lang]);
   const title = T("h_top"), desc = T("top_note");
-  const section = (k, fmtVal) => top[k] && top[k].length ? `<section class="card pop"><h2>${esc(T("top_" + k))}<span class="n">${F.num(top[k].length)}</span></h2>${asRows(home, lang, top[k], 100, fmtVal)}</section>` : "";
+  const section = (k, fmtVal) => top[k] && top[k].length ? `<section class="card pop"><h2>${esc(T("top_" + k))}<span class="n">${F.num(Math.min(top[k].length, 50))}</span></h2>${asRows(home, lang, top[k], 50, fmtVal, true)}</section>` : "";
   const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>${HOME_L(T, home)}</section>
 ${section("size", v => F.count(T, "n_addr", v, true))}${section("pfx", v => F.count(T, "n_pfx", v))}${section("moas", v => F.count(T, "n_pfx", v))}${section("old", v => v)}${section("new", v => v)}`;
   return { status: 200, rest: "top", title, desc, main, data: { page: "top" }, foot: footOf(T, meta) };
@@ -268,6 +269,21 @@ export function browseIndexPage({ T, lang, site, kind, rows, meta }) {
   const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>${HOME_L(T, home)}</section>
 <section class="card pop"><ul class="hl">${list}</ul></section>`;
   return { status: 200, rest: cc ? "country" : "rir", title, desc, main, data: { page: cc ? "cc" : "rir" }, foot: footOf(T, meta) };
+}
+
+// /today: the last daily run of the routing history (history/meta.json): how many routes were announced, what changed
+// since the run before, and the networks allocated most recently
+export function todayPage({ T, lang, site, hist, newest, meta }) {
+  const F = fmt(lang), home = path(SLUG[lang]);
+  const title = T("h_today"), desc = hist && hist.day ? fill(T("today_lead"), { day: hist.day }) : T("today_unavailable");
+  const rows = hist && hist.day ? [[T("today_day"), esc(hist.day)], [T("today_routes"), F.num(hist.routes || 0)],
+    [T("today_added"), `<span class="mono">+${F.num(hist.added || 0)}</span>`], [T("today_gone"), `<span class="mono">−${F.num(hist.gone || 0)}</span>`],
+    [T("today_vrps"), F.num(hist.vrps || 0)], [T("today_ases"), F.num(hist.ases || 0)]] : [];
+  const list = (newest || []).length ? `<section class="card pop"><h2>${esc(T("today_new"))}</h2>${asRows(home, lang, newest, 20, v => v)}</section>` : "";
+  const main = `<section class="hero card">${SEARCH(T, home)}<h1>${esc(title)}</h1><p class="lead">${esc(desc)}</p>
+  <p class="links"><a href="${home}top">${esc(T("h_top"))}</a><a href="${home}moas">${esc(T("h_moas"))}</a></p>${HOME_L(T, home)}</section>
+${rows.length ? `<section class="card pop">${kv(rows)}<p class="note m">${esc(T("today_note"))}</p></section>` : ""}${list}`;
+  return { status: 200, rest: "today", title, desc, main, data: { page: "today" }, foot: footOf(T, meta) };
 }
 
 const footOf = (T, meta) => fill(T("foot"), { date: (meta && meta.at || "").slice(0, 10) });
