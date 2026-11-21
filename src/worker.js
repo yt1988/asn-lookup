@@ -416,8 +416,10 @@ async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
     from = "miss";
   }
   pages.set(ck, v, v.html.length * 2);
-  if (!fromCache && edgeOK && v.status === 200) {
-    const kept = new Response(v.html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", ETag: v.etag, "Cache-Control": `public, max-age=${PAGE_TTL}` } });
+  if (!fromCache && edgeOK && (v.status === 200 || v.status === 404)) {
+    // a 404 for an AS number nobody holds is a real page (robots say noindex) and scanners ask for many: kept an hour
+    const ttl = v.status === 200 ? PAGE_TTL : 3600;
+    const kept = new Response(v.html, { status: v.status, headers: { "Content-Type": "text/html; charset=utf-8", ETag: v.etag, "Cache-Control": `public, max-age=${ttl}` } });
     try { ctx.waitUntil(caches.default.put(new Request(ck, { method: "GET" }), kept).catch(() => { edgeOK = false; })); } catch (e) { edgeOK = false; }
   }
   return clientPage(v, request, from);
