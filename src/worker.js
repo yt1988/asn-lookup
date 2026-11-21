@@ -26,24 +26,49 @@ const PATHS = Object.fromEntries(LANGS.map(([l, s]) => [l, path(s)]));
 
 /* ---------- static data, kept per isolate ---------- */
 
-const memo = new Map();
-function keep(k, v) { if (memo.size > 300) memo.delete(memo.keys().next().value); memo.set(k, v); return v; }
+// One isolate serves many requests, so a shard it has read is kept while it is in use and dropped by least-recent
+// use when the rest of the isolate needs the memory. A Worker gets 128 MB, every shard together is 90 MB and the page
+// and JSON caches below have their own shares, so the budget here is 32 MB — counting a parsed JSON shard at three
+// times its file (objects cost more than their bytes) and a binary one at its size. A miss is remembered for a minute,
+// not for good; `/data/meta.json` and the page templates change with a deploy and are re-read every five minutes.
+const memo = lru(32 * 1024 * 1024), MISS = 600e3, DEPLOY = 300e3;
+function lru(max) {
+  const m = new Map();
+  let bytes = 0;
+  return {
+    get(k) { const v = m.get(k); if (v) { m.delete(k); m.set(k, v); } return v; },
+    set(k, v, size = 0) {
+      const old = m.get(k);
+      if (old) { bytes -= old.size || 0; m.delete(k); }
+      while (bytes + size > max && m.size) {   // least recently used first (a hit moves its entry to the end)
+        const [kk, vv] = m.entries().next().value;
+        m.delete(kk); bytes -= vv.size || 0;
+      }
+      v.size = size; m.set(k, v); bytes += size;
+    },
+  };
+}
+const keep = (k, v, size = 0) => memo.set(k, v, size);
 async function asset(env, origin, p, as = "json") {
   const k = as + p, hit = memo.get(k);
-  if (hit && (!hit.until || hit.until > Date.now())) return hit.v;
+  if (hit && (!hit.until || hit.until > Date.now())) return hit.v;   // get() has moved it to the newest end
   const r = await env.ASSETS.fetch(new Request(origin + p));
-  if (!r.ok) { if (r.status === 404) keep(k, { v: null, until: Date.now() + 600e3 }); return null; }
-  const v = as === "json" ? await r.json() : as === "bin" ? new Uint32Array(await r.arrayBuffer()) : { text: await r.text(), etag: r.headers.get("etag") || "" };
+  if (!r.ok) { if (r.status === 404) keep(k, { v: null, until: Date.now() + MISS, size: 0 }); return null; }
+  const buf = as === "bin" ? await r.arrayBuffer() : null;
+  const text = as === "bin" ? null : await r.text(), bytes = buf ? buf.byteLength : text.length;
+  const v = as === "json" ? JSON.parse(text) : buf ? new Uint32Array(buf) : { text, etag: r.headers.get("etag") || "" };
   // meta and templates change with a deploy; re-read them now and then
-  keep(k, { v, until: p === "/data/meta.json" || p.startsWith("/tpl/") ? Date.now() + 300e3 : 0 });
+  keep(k, { v, until: p === "/data/meta.json" || p.startsWith("/tpl/") ? Date.now() + DEPLOY : 0 }, as === "json" ? bytes * 3 : bytes);
   return v;
 }
 const asRec = async (env, o, asn) => ((await asset(env, o, `/data/as/${Math.floor(asn / BUCKET)}.json`)) || {})[asn] || null;
+// The names of the AS numbers asked about: a neighbour list asks for a few dozen, so each shard is looked into where it
+// is asked for, not copied into one object first (three shards of 1000 entries, on every neighbours request).
 async function names(env, o, list) {
   const files = [...new Set(list.map(a => Math.floor(a / NAMES)))];
-  const got = await Promise.all(files.map(f => asset(env, o, `/data/names/${f}.json`)));
-  const all = Object.assign({}, ...got.filter(Boolean));
-  return a => all[a] || ["", ""];
+  const got = new Map();
+  await Promise.all(files.map(async f => got.set(f, await asset(env, o, `/data/names/${f}.json`))));
+  return a => { const sh = got.get(Math.floor(a / NAMES)); return (sh && sh[a]) || ["", ""]; };
 }
 
 // The AS announcing an address, its record, the shard's range and the announced prefix holding the address
@@ -172,7 +197,8 @@ const dayStr = d => d ? new Date(d * 864e5).toISOString().slice(0, 10) : "";
 
 /* ---------- live parts ---------- */
 
-const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
+// a string body is passed through: it is already JSON (see RAW above)
+const json = (body, status = 200, extra = {}) => new Response(typeof body === "string" ? body : JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*", "X-Content-Type-Options": "nosniff", ...extra },
 });
 // fresh: past Cloudflare's cache (what the caller keeps itself, like the RDAP records in cached() below)
@@ -182,17 +208,34 @@ async function getJSON(u, ms = 6000, headers = {}, fresh = false) {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
 }
-// a day in this data center's cache; an error, or a body marked [NOCACHE] (part of it missing), is answered but not kept
-const NOCACHE = Symbol("nocache");
+// A JSON answer kept for `ttl` seconds in this data center's cache; an error, or a body marked [NOCACHE] (part of it
+// missing), is answered but not kept. The Cache API is where it applies (requests this Worker receives directly);
+// where it does not apply the isolate's own copy answers instead, byte for byte the same, so a repeat never asks the
+// registries or RIPE again.
+const NOCACHE = Symbol("nocache"), RAW = Symbol("raw"), jsonMemo = lru(8 * 1024 * 1024);
+const raw = text => ({ [RAW]: text });   // a body that is already JSON and never looked into here (the routing history)
+const jsonHeaders = cc => ({ "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*",
+  "X-Content-Type-Options": "nosniff", ...(cc ? { "Cache-Control": cc } : {}) });
+const fromMemo = u => { const m = jsonMemo.get(u); return m && m.until > Date.now() ? m : null; };
 async function cached(request, ctx, make, ttl = DAY) {
-  const key = new Request(new URL(request.url).toString(), { method: "GET" });
-  const c = caches.default, hit = await c.match(key);
+  const u = new URL(request.url).toString(), key = new Request(u, { method: "GET" });
+  let hit = null;
+  try { hit = await caches.default.match(key); } catch (e) {}
   if (hit) return hit;
+  const m = fromMemo(u);
+  if (m) return new Response(m.body, { status: 200, headers: jsonHeaders(m.cc) });
   let body, ok = true;
   try { body = await make(); } catch (e) { ok = false; body = { error: String(e && e.message || e).slice(0, 80) }; }
   if (body && body[NOCACHE]) ok = false;
-  const res = json(body, 200, { "Cache-Control": ok ? `public, max-age=${ttl}` : "no-store" });
-  if (ok) ctx.waitUntil(c.put(key, res.clone()));
+  // make() may have kept the body itself, under its own key and for its own deadline (the routing history)
+  const kept = ok && fromMemo(u);
+  const cc = kept ? kept.cc : `public, max-age=${ttl}`;
+  const text = body && body[RAW] !== undefined ? body[RAW] : JSON.stringify(body);
+  const res = new Response(text, { status: 200, headers: jsonHeaders(ok ? cc : "no-store") });
+  if (ok) {
+    if (!kept) jsonMemo.set(u, { body: text, cc, until: Date.now() + ttl * 1000 }, text.length * 2);
+    try { ctx.waitUntil(caches.default.put(key, res.clone()).catch(() => {})); } catch (e) {}
+  }
   return res;
 }
 
@@ -254,15 +297,27 @@ async function neighbours(env, o, asn) {
 // server; kept here until the next run's files are in (04:30 UTC). An AS with no history: {}. HISTORY_URL: where the
 // files are, "" for none (self-hosting without the server).
 const HISTORY = "https://data.1ms.dog:2083/asn/";
+// The file is passed through as it comes: it is 65–300 KB of JSON nobody here looks into, and parsing it only to
+// serialize it again was most of the CPU this Worker spent (measured locally: 1.7 ms to parse + 1.2 ms to write a
+// 295 KB file). The body is checked to be an object or `{}` for an AS with no history.
 async function history(env, asn) {
   const base = env.HISTORY_URL ?? HISTORY;
-  if (!base) return {};
-  try { return await getJSON(`${base}as/${asn}.json`, 8000, {}, true); } catch (e) { if (/HTTP 404/.test(e.message)) return {}; throw e; }
+  if (!base) return raw("{}");
+  const u = `${base}as/${asn}.json`, m = fromMemo(u);
+  if (m) return raw(m.body);
+  const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(8000), cache: "no-store" });
+  if (r.status === 404) return raw("{}");
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const text = (await r.text()).trim();
+  if (!/^[[{]/.test(text)) throw new Error("not JSON");
+  jsonMemo.set(u, { body: text, cc: `public, max-age=${untilRun()}`, until: nextRun() }, text.length * 2);
+  return raw(text);
 }
-function untilRun(now = Date.now()) {
+const nextRun = (now = Date.now()) => {
   const d = new Date(now), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 4, 30);
-  return Math.max(600, Math.round(((next > now ? next : next + DAY * 1000) - now) / 1000));
-}
+  return next > now ? next : next + DAY * 1000;
+};
+const untilRun = (now = Date.now()) => Math.max(600, Math.round((nextRun(now) - now) / 1000));
 // The history run's own totals (history/meta.json), for /today: kept in this isolate until the next run's files are in,
 // the same deadline as the AS files; a failed fetch is retried on the next request.
 let histMeta = { exp: 0, v: null };
@@ -313,14 +368,11 @@ async function prepaintSha() {
 }
 const djb2 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
 
-async function render(request, env, o, lang, site, r, page) {
+async function render(env, o, lang, site, r, page) {
   const tpl = await asset(env, o, `/tpl/${lang === "en" ? "en" : SLUG[lang]}.html`, "text");
-  if (!tpl) return new Response("Not built", { status: 503 });
+  if (!tpl) return null;
   const meta = await asset(env, o, "/data/meta.json");
   const etag = `W/"${djb2([tpl.etag, meta && meta.at, lang, r.rest, r.status, r.hostKey || "", r.data && r.data.shared || ""].join("|"))}"`;
-  const headers = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=0, must-revalidate", ETag: etag,
-    "Content-Security-Policy": csp(await prepaintSha()), ...HEADERS };
-  if (r.status === 200 && (request.headers.get("if-none-match") || "").split(",").map(s => s.trim()).includes(etag)) return new Response(null, { status: 304, headers });
   const T = k => STRINGS[lang][k];
   const html = tpl.text
     .replace("{{rootAttr}}", lang === "en" ? " data-root" : "")
@@ -328,7 +380,58 @@ async function render(request, env, o, lang, site, r, page) {
     .replace("{{main}}", () => r.main)
     .replace("{{foot}}", () => esc(r.foot || T("foot_home")))
     .replace("{{data}}", () => JSON.stringify({ lang, paths: PATHS, page, rest: r.rest, ...r.data }).replace(/</g, "\\u003c"));
-  return new Response(html, { status: r.status, headers });
+  return { status: r.status, etag, html };
+}
+
+// A rendered page is kept, under a key with the build's template ETag and the data's day: a deploy or a new day
+// starts a fresh set, and nothing older is ever served. It is looked up in this isolate first (a Map read, and some
+// pages are asked for far more often than others), then in the data center's cache — the Cache API is only effective
+// for requests the Worker receives directly, and on 1ms.dog the pages come through the shell's service binding, so the
+// isolate is where a repeat actually lands. The copy the visitor gets still says no-cache, and the ETag answers a
+// revalidation with a 304 without rendering anything.
+const PAGE_TTL = DAY, pages = lru(16 * 1024 * 1024);
+// The build stamp scripts/build.mjs writes into every template (a hash of src/): a deploy changes it, and with it the
+// cache key, even when the assets' ETags are not to be had. The data's day covers the other input.
+const stampOf = tpl => tpl.stamp ??= (/<!-- build:([0-9a-f]+) -->/.exec(tpl.text) || [])[1] || tpl.etag || "";
+let edgeOK = true;   // false once the Cache API has refused this isolate a page (see the comment above)
+async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
+  const tpl = await asset(env, o, `/tpl/${lang === "en" ? "en" : SLUG[lang]}.html`, "text");
+  if (!tpl) return new Response("Not built", { status: 503 });
+  const meta = await asset(env, o, "/data/meta.json");
+  // the page depends on its path and, at most, on the search word (/find) or the site it is about (/ip?host=); any
+  // other query string is someone's tracking parameter and must not make another copy of the page
+  const u = new URL(request.url), src = new URL(o + u.pathname);
+  for (const k of ["q", "host"]) if (u.searchParams.has(k)) src.searchParams.set(k, u.searchParams.get(k));
+  src.searchParams.set("__pc", `${stampOf(tpl)}|${(meta && meta.at) || ""}|${extra}`);
+  const ck = src.toString();
+  let v = pages.get(ck), fromCache = false;
+  if (!v && edgeOK) {
+    // try the data center's cache once per isolate; where the Cache API is unavailable this is a miss, not an error
+    try {
+      const hit = await caches.default.match(new Request(ck, { method: "GET" }));
+      if (hit) { v = { status: hit.status, etag: hit.headers.get("etag") || "", html: await hit.text() }; fromCache = true; }
+    } catch (e) { edgeOK = false; }
+  }
+  if (!v) {
+    const r = await build();
+    if (!r) return notFound();
+    v = await render(env, o, lang, site, r, name);
+    if (!v) return new Response("Not built", { status: 503 });
+    // a 404 page (an AS nobody holds) is kept here like the rest: it is cheap to render but it is asked for a lot
+  }
+  pages.set(ck, v, v.html.length * 2);
+  if (!fromCache && edgeOK && v.status === 200) {
+    const kept = new Response(v.html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", ETag: v.etag, "Cache-Control": `public, max-age=${PAGE_TTL}` } });
+    try { ctx.waitUntil(caches.default.put(new Request(ck, { method: "GET" }), kept).catch(() => { edgeOK = false; })); } catch (e) { edgeOK = false; }
+  }
+  return clientPage(v, request);
+}
+async function clientPage(v, request) {
+  const headers = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=0, must-revalidate", ETag: v.etag,
+    "Content-Security-Policy": csp(await prepaintSha()), ...HEADERS };
+  const inm = request.headers.get("if-none-match");
+  if (v.status === 200 && v.etag && inm && inm.split(",").map(s => s.trim()).includes(v.etag)) return new Response(null, { status: 304, headers });
+  return new Response(request.method === "HEAD" ? null : v.html, { status: v.status, headers });
 }
 
 const redirect = (to, status = 301) => new Response(null, { status, headers: { Location: to, "Cache-Control": status === 301 ? "public, max-age=86400" : "no-store" } });
@@ -352,14 +455,18 @@ export default {
     }
     if ((m = /^\/api\/ip\/(.+)$/.exec(p))) {
       const hit = await lookup(env, o, m[1]);
-      return hit ? json(slim(hit), 200, { "Cache-Control": "public, max-age=3600" }) : json({ error: "not an IP address" }, 400);
+      if (!hit) return json({ error: "not an IP address" }, 400);
+      return cached(request, ctx, () => slim(hit), 3600);
     }
     if ((m = /^\/api\/as\/(?:as)?(\d{1,10})$/i.exec(p))) {
       const asn = +m[1], rec = await asRec(env, o, asn);
       if (!rec) return json({ asn, error: "not allocated" }, 404);
-      const full = rec.x ? await asset(env, o, `/data/px/${asn}.json`) : null;
-      const { x, ...r } = rec;
-      return json({ asn, name: knownName(asn, "en") || r.h || null, ...r, ...(full || {}) }, 200, { "Cache-Control": "public, max-age=3600" });
+      // every prefix of a big AS makes this a large body to serialize; kept an hour, like the page it belongs to
+      return cached(request, ctx, async () => {
+        const full = rec.x ? await asset(env, o, `/data/px/${asn}.json`) : null;
+        const { x, ...r } = rec;
+        return { asn, name: knownName(asn, "en") || r.h || null, ...r, ...(full || {}) };
+      }, 3600);
     }
     if ((m = /^\/api\/rdap\/as\/(\d{1,10})$/.exec(p))) return cached(request, ctx, async () => rdap(((await asRec(env, o, +m[1])) || {}).r, `autnum/${m[1]}`));
     if ((m = /^\/api\/rdap\/ip\/(.+)$/.exec(p))) {
@@ -393,46 +500,61 @@ export default {
 
     // the pages that are not one AS or one address: search results, hosts, leaderboards, countries and registries
     if (p === "/find") {
-      const q = (url.searchParams.get("q") || "").slice(0, 60), meta = await asset(env, o, "/data/meta.json");
-      return render(request, env, o, lang, site, findPage({ T, lang, site, q, hits: await findByName(env, o, q), meta }), "find");
+      return page(request, ctx, env, o, lang, site, async () => {
+        const q = (url.searchParams.get("q") || "").slice(0, 60), meta = await asset(env, o, "/data/meta.json");
+        return findPage({ T, lang, site, q, hits: await findByName(env, o, q), meta });
+      }, "find");
     }
     if (p === "/today") {
-      const meta = await asset(env, o, "/data/meta.json"), hist = await historyMeta(env);
-      const top = (await asset(env, o, "/data/top.json")) || {};
-      const since = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10);
-      const newest = (top.new || []).filter(r => r[3] >= since).slice(0, 20);
-      return render(request, env, o, lang, site, todayPage({ T, lang, site, hist, newest, meta }), "today");
+      return page(request, ctx, env, o, lang, site, async () => {
+        const meta = await asset(env, o, "/data/meta.json"), hist = await historyMeta(env);
+        const top = (await asset(env, o, "/data/top.json")) || {};
+        const since = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10);
+        const newest = (top.new || []).filter(r => r[3] >= since).slice(0, 20);
+        return todayPage({ T, lang, site, hist, newest, meta });
+      }, "today", String(nextRun()));   // the page is "today": it must not outlive the routing history's next run
     }
     if (p === "/tools") {
-      return render(request, env, o, lang, site, toolsPage({ T, lang, site, meta: await asset(env, o, "/data/meta.json") }), "tools");
+      return page(request, ctx, env, o, lang, site,
+        async () => toolsPage({ T, lang, site, meta: await asset(env, o, "/data/meta.json") }), "tools");
     }
     if (p === "/top" || p === "/moas") {
-      const meta = await asset(env, o, "/data/meta.json");
-      const r = p === "/top" ? topPage({ T, lang, site, top: (await asset(env, o, "/data/top.json")) || {}, meta })
-        : moasPage({ T, lang, site, moas: (await asset(env, o, "/data/moas.json")) || { all: 0, list: [] }, meta });
-      return render(request, env, o, lang, site, r, p.slice(1));
+      return page(request, ctx, env, o, lang, site, async () => {
+        const meta = await asset(env, o, "/data/meta.json");
+        return p === "/top" ? topPage({ T, lang, site, top: (await asset(env, o, "/data/top.json")) || {}, meta })
+          : moasPage({ T, lang, site, moas: (await asset(env, o, "/data/moas.json")) || { all: 0, list: [] }, meta });
+      }, p.slice(1));
     }
     if ((m = /^\/country(?:\/([A-Za-z]{2}))?\/?$/.exec(p))) {
-      const meta = await asset(env, o, "/data/meta.json");
-      if (!m[1]) return render(request, env, o, lang, site, browseIndexPage({ T, lang, site, kind: "cc", rows: (await asset(env, o, "/data/cc/index.json")) || [], meta }), "cc");
-      const cc = m[1].toUpperCase(), rows = await asset(env, o, `/data/cc/${cc}.json`);
-      if (!rows) return notFound();
-      return render(request, env, o, lang, site, browsePage({ T, lang, site, kind: "cc", key: cc, rows, meta }), "cc");
+      if (!m[1]) return page(request, ctx, env, o, lang, site, async () => {
+        const meta = await asset(env, o, "/data/meta.json");
+        return browseIndexPage({ T, lang, site, kind: "cc", rows: (await asset(env, o, "/data/cc/index.json")) || [], meta });
+      }, "cc");
+      const cc = m[1].toUpperCase();
+      return page(request, ctx, env, o, lang, site, async () => {
+        const rows = await asset(env, o, `/data/cc/${cc}.json`);
+        return rows ? browsePage({ T, lang, site, kind: "cc", key: cc, rows, meta: await asset(env, o, "/data/meta.json") }) : null;
+      }, "cc");
     }
     if ((m = /^\/rir(?:\/([A-Za-z]{2,7}))?\/?$/.exec(p))) {
-      const meta = await asset(env, o, "/data/meta.json");
-      if (!m[1]) return render(request, env, o, lang, site, browseIndexPage({ T, lang, site, kind: "rir", rows: (await asset(env, o, "/data/rir/index.json")) || [], meta }), "rir");
+      if (!m[1]) return page(request, ctx, env, o, lang, site, async () => {
+        const meta = await asset(env, o, "/data/meta.json");
+        return browseIndexPage({ T, lang, site, kind: "rir", rows: (await asset(env, o, "/data/rir/index.json")) || [], meta });
+      }, "rir");
       const rir = m[1].toUpperCase();
       if (!RIR_LIST.includes(rir)) return notFound();
-      const rows = await asset(env, o, `/data/rir/${rir}.json`);
-      if (!rows) return notFound();
-      return render(request, env, o, lang, site, browsePage({ T, lang, site, kind: "rir", key: rir, rows, meta }), "rir");
+      return page(request, ctx, env, o, lang, site, async () => {
+        const rows = await asset(env, o, `/data/rir/${rir}.json`);
+        return rows ? browsePage({ T, lang, site, kind: "rir", key: rir, rows, meta: await asset(env, o, "/data/meta.json") }) : null;
+      }, "rir");
     }
     if ((m = /^\/host\/(.+?)\/?$/.exec(p))) {
       const host = hostOf(m[1]);
       if (!host) return notFound();
+      // not cached: the addresses are live DNS, and a page kept for a day would keep a moved site on its old network
       const meta = await asset(env, o, "/data/meta.json");
-      return render(request, env, o, lang, site, hostPage({ T, lang, site, host, rows: await hostRows(env, o, host), meta }), "host");
+      const v = await render(env, o, lang, site, hostPage({ T, lang, site, host, rows: await hostRows(env, o, host), meta }), "host");
+      return v ? clientPage(v, request) : new Response("Not built", { status: 503 });
     }
 
     // A shared result: /r/1~<when shared, ms in base 36>~<the page: AS4134 or ip/…>. It is that page, today's data,
@@ -452,8 +574,8 @@ export default {
       if (asn >= 2 ** 32) return notFound();
       const meta = await asset(env, o, "/data/meta.json");
       if (!meta) return new Response("Data not built: run npm run data", { status: 503 });
-      const rec = await asRec(env, o, asn);
-      return render(request, env, o, lang, site, share(asPage({ T, lang, site, asn, rec, meta })), "as");
+      return page(request, ctx, env, o, lang, site,
+        async () => share(asPage({ T, lang, site, asn, rec: await asRec(env, o, asn), meta })), "as");
     }
 
     if ((m = /^\/ip\/(.+?)\/?$/.exec(p)) || (family(p.slice(1)) && (m = [null, p.slice(1)]))) {
@@ -463,13 +585,13 @@ export default {
       if (p !== "/ip/" + want) return shared ? notFound() : redirect(home + "ip/" + want + url.search);
       const meta = await asset(env, o, "/data/meta.json");
       if (!meta) return new Response("Data not built: run npm run data", { status: 503 });
-      const hit = await lookup(env, o, c.ip);
-      const hq = (url.searchParams.get("host") || "").toLowerCase();
-      const host = DOMAIN.test(hq) ? hq : "";
-      const al = await allocOf(env, o, c.ip);
-      const r = ipPage({ T, lang, site, hit: { ...hit, ip: want }, host, meta, alloc: al ? { rir: al.rir, day: dayStr(al.day) } : null });
-      r.hostKey = host;
-      return render(request, env, o, lang, site, share(r), "ip");
+      const hq = (url.searchParams.get("host") || "").toLowerCase(), host = DOMAIN.test(hq) ? hq : "";
+      return page(request, ctx, env, o, lang, site, async () => {
+        const hit = await lookup(env, o, c.ip), al = await allocOf(env, o, c.ip);
+        const r = ipPage({ T, lang, site, hit: { ...hit, ip: want }, host, meta, alloc: al ? { rir: al.rir, day: dayStr(al.day) } : null });
+        r.hostKey = host;
+        return share(r);
+      }, "ip");
     }
     return notFound();
   },

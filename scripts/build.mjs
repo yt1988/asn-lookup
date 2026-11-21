@@ -14,6 +14,7 @@
 import { mkdir, readFile, readdir, writeFile, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { relative } from "node:path";
 import { build as bundle, transform } from "esbuild";
 import { LANGS } from "../src/langs.mjs";
 import { STRINGS } from "../src/strings.mjs";
@@ -36,6 +37,15 @@ export async function build({ check = false } = {}) {
   const I = STRINGS, en = I.en;
   for (const [l] of LANGS) for (const k of Object.keys(en)) if (!(k in I[l])) throw new Error(`i18n/${l}.mjs is missing "${k}"`);
   const tpl = await readFile(new URL("page.html", src), "utf8");
+
+  // A stamp of everything in src/: the Worker keeps rendered pages under a key with the template's ETag, so a page it
+  // renders must change its key whenever the code that renders it (not just the browser bundle) changes.
+  const srcDir = fileURLToPath(src);
+  const allFiles = async dir => (await readdir(dir, { withFileTypes: true })).flatMap(e =>
+    e.isDirectory() ? [] : [new URL(e.name, dir)]);
+  const subDirs = (await readdir(src, { withFileTypes: true })).filter(e => e.isDirectory()).map(e => new URL(e.name + "/", src));
+  const srcFiles = (await Promise.all([src, ...subDirs].map(allFiles))).flat();
+  const buildId = hash((await Promise.all(srcFiles.map(async u => relative(srcDir, fileURLToPath(u)) + "\0" + await readFile(u, "utf8")))).sort().join("\n"));
 
   const root = fileURLToPath(new URL("..", import.meta.url));
   // no ES2020 syntax (?. and ??) in the output: before Safari 13.1 and Chrome 80 it is a syntax error, and none of the
@@ -63,7 +73,7 @@ export async function build({ check = false } = {}) {
     const shell = tpl
       .replace(/(<(\w+)\b[^>]*\sdata-i="(\w+)"[^>]*>)([^<]*)(<\/\2>)/g, (m, open, tag, k, inner, close) => open + esc(T(k)) + close)
       .replace(/\{\{a:(\w+)\}\}/g, (m, k) => esc(T(k)))
-      .replace("{{lang}}", lang).replace("{{pathsAttr}}", esc(JSON.stringify(paths)))
+      .replace("{{build}}", `<!-- build:${buildId} -->`).replace("{{lang}}", lang).replace("{{pathsAttr}}", esc(JSON.stringify(paths)))
       .replace("{{prepaint}}", PREPAINT).replace("{{css}}", cssName).replace("{{js}}", jsName).replace("{{strings}}", sName)
       .split("{{homeHref}}").join(path(slug)).replace("{{langOpts}}", langOpts)
       .replace("{{helpNav}}", helpNav).replace("{{helpC}}", helpC);

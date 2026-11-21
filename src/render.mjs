@@ -10,10 +10,16 @@ export const fill = (s, v) => { for (const k in v) s = s.split("{" + k + "}").jo
 export const path = slug => "/" + (slug ? slug + "/" : "");
 const json = o => JSON.stringify(o).replace(/</g, "\\u003c");
 
+// One set of formatters per language, kept: building Intl formatters is the most expensive part of rendering a
+// listing page, and the isolate serves many requests in the same language.
+const FMT = new Map();
 export function fmt(lang) {
+  const kept = FMT.get(lang);
+  if (kept) return kept;
   const nf = new Intl.NumberFormat(lang), cf = new Intl.NumberFormat(lang, { notation: "compact", maximumSignificantDigits: 3 });
   const pr = new Intl.PluralRules(lang), big = n => n >= 100000 ? cf.format(n) : nf.format(n);
-  return {
+  const ccNames = new Map();   // the country list asks for each name twice
+  const f = {
     num: n => nf.format(n),
     big,
     // n with its noun: key_<plural rule> (key_one, Russian key_few / key_many) when the language has it, else key
@@ -23,8 +29,15 @@ export function fmt(lang) {
       try { s = T(key + "_" + pr.select(n)); } catch (e) {}   // the build's T throws on a key the language doesn't have
       return fill(s || T(key), { n: compact ? big(n) : nf.format(n) }).replace(CJK_SP, "$1");   // "243万 个" → "243万个"
     },
-    country: cc => { if (!cc) return ""; try { return regionName(cc, lang); } catch (e) { return cc; } },
+    country: cc => {
+      if (!cc) return "";
+      let s = ccNames.get(cc);
+      if (s === undefined) { try { s = regionName(cc, lang); } catch (e) { s = cc; } ccNames.set(cc, s); }
+      return s;
+    },
   };
+  FMT.set(lang, f);
+  return f;
 }
 // AP is a registry label in asn.txt ("Asia-Pacific"), not a country: there is no flag for it
 export const flag = cc => /^[A-Z]{2}$/.test(cc || "") && cc !== "AP" ? `<img class="flag" src="/flags/${flagCode(cc)}.svg" alt="" width="20" height="15">` : "";
@@ -270,7 +283,7 @@ export function browseIndexPage({ T, lang, site, kind, rows, meta }) {
   const list = rows.map(([k, n]) => {
     if (!cc) return `<li><a href="${home}rir/${k.toLowerCase()}">${esc(k)}</a><span class="n">${F.num(n)}</span></li>`;
     const name = F.country(k) || k;
-    let en = ""; try { en = regionName(k, "en") || ""; } catch (e) {}   // searchable in English on every language's page
+    const en = fmt("en").country(k);   // searchable in English on every language's page
     return `<li data-cc="${k}" data-cont="${continentOf(k)}" data-name="${esc((name + " " + en + " " + k).toLowerCase())}"><a class="ccl" href="${home}country/${k}" title="${esc(name)}">${flag(k)}<span>${esc(name)}</span></a><span class="n">${F.num(n)}</span></li>`;
   }).join("");
   const bar = cc ? `<div class="ccf" id="ccF" role="group" aria-label="${esc(title)}">${[["", "cont_all"], ["AF", "cont_africa"], ["AS", "cont_asia"], ["EU", "cont_europe"],
