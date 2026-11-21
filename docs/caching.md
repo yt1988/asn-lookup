@@ -60,3 +60,14 @@ page is built.
 
 A reverse proxy in front of the Worker may rewrite `Cache-Control` on what it caches; that is outside this Worker and
 outside this repository.
+
+## Reading many shards: await them together, never one after another
+
+A name search (`/find`, `/api/find`) has to look at up to 150 AS records before it can say what matched, and each
+record may be in a different shard. Written as a `for` loop with `await` inside, each shard was read only after the
+previous one answered: on 2026-11-21 `GET /api/find?q=telecom` took **22.9 seconds** on the live site (`china`, 15.7 s
+on its first request). Read with `Promise.all` and cached as above, the same query answers in **0.3–0.8 s**.
+
+A local checkout does not show this: there, `env.ASSETS.fetch` is answered from memory, so the loop looks fast. Any
+loop that awaits a subrequest is worth reading twice. (The neighbours lookup, `names()`, used to copy three shards of
+1,000 names into one object on every request for the same reason — it now reads each shard where it is needed.)
