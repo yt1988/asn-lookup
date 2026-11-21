@@ -223,6 +223,17 @@ async function getJSON(u, ms = 6000, headers = {}, fresh = false) {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
 }
+// A URL is worth the data center's cache only once this isolate has seen it before. A crawler asks for each AS and
+// address page once, and measured on 1ms.dog, putting those one-off pages cost more CPU than the hits ever saved
+// (3.34 ms a request after caching against 2.58 before). The isolate's own copy is cheap and answers repeats; the
+// Cache API, which costs a lookup and a copy, is for what comes back.
+const seen = new Map(), SEEN_MAX = 50000;
+function seenBefore(u) {
+  const k = djb2(u), n = seen.get(k);   // a short hash: a URL costs far more memory than the answer here is worth
+  if (n === undefined) { if (seen.size >= SEEN_MAX) seen.delete(seen.keys().next().value); seen.set(k, 1); return false; }
+  seen.set(k, n + 1);
+  return true;
+}
 // A JSON answer kept for `ttl` seconds in this data center's cache; an error, or a body marked [NOCACHE] (part of it
 // missing), is answered but not kept. The Cache API is where it applies (requests this Worker receives directly);
 // where it does not apply the isolate's own copy answers instead, byte for byte the same, so a repeat never asks the
@@ -232,23 +243,37 @@ const raw = text => ({ [RAW]: text });   // a body that is already JSON and neve
 const jsonHeaders = (cc, from) => ({ "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*",
   "X-Content-Type-Options": "nosniff", ...(cc ? { "Cache-Control": cc } : {}), ...(from ? { "X-Cache": from } : {}) });
 const fromMemo = u => { const m = jsonMemo.get(u); return m && m.until > Date.now() ? m : null; };
+// A repeat also writes the data center's copy — once, on its second sighting — where the Cache API applies (requests
+// this Worker receives directly); the isolate's own copy answers every repeat after that without asking the Cache API.
 async function cached(request, ctx, make, ttl = DAY) {
   const u = new URL(request.url).toString(), key = new Request(u, { method: "GET" });
-  let hit = null;
-  try { hit = await caches.default.match(key); } catch (e) {}
-  if (hit) { const h = new Headers(hit.headers); h.set("X-Cache", "hit-edge"); return new Response(hit.body, { status: hit.status, headers: h }); }
-  const m = fromMemo(u);
-  if (m) return new Response(m.body, { status: 200, headers: jsonHeaders(m.cc, "hit") });
+  let m = fromMemo(u);
+  if (m) {
+    const res = new Response(m.body, { status: 200, headers: jsonHeaders(m.cc, "hit") });
+    if (!m.put) edgePut(ctx, u, key, m, res);
+    return res;
+  }
+  if (seenBefore(u)) {
+    let hit = null;
+    try { hit = await caches.default.match(key); } catch (e) {}
+    if (hit) {
+      const body = await hit.text(), h = new Headers(hit.headers);
+      h.set("X-Cache", "hit-edge");
+      jsonMemo.set(u, m = { body, cc: h.get("cache-control") || "", put: true, until: Date.now() + ttl * 1000 }, body.length * 2);
+      return new Response(body, { status: hit.status, headers: h });
+    }
+  }
   let body, ok = true;
   try { body = await make(); } catch (e) { ok = false; body = { error: String(e && e.message || e).slice(0, 80) }; }
   if (body && body[NOCACHE]) ok = false;
   const cc = `public, max-age=${ttl}`, text = body && body[RAW] !== undefined ? body[RAW] : JSON.stringify(body);
   const res = new Response(text, { status: 200, headers: jsonHeaders(ok ? cc : "no-store", "miss") });
-  if (ok) {
-    jsonMemo.set(u, { body: text, cc, until: Date.now() + ttl * 1000 }, text.length * 2);
-    try { ctx.waitUntil(caches.default.put(key, res.clone()).catch(() => {})); } catch (e) {}
-  }
+  if (ok) jsonMemo.set(u, { body: text, cc, until: Date.now() + ttl * 1000 }, text.length * 2);
   return res;
+}
+function edgePut(ctx, u, key, entry, res) {
+  entry.put = true;
+  try { ctx.waitUntil(caches.default.put(key, res.clone()).catch(() => {})); } catch (e) {}
 }
 
 // RDAP: the vCard's name and e-mail of the entities with a role, looking into nested entities too
@@ -392,11 +417,10 @@ async function render(env, o, lang, site, r, page, T) {
 }
 
 // A rendered page is kept, under a key with the build's template ETag and the data's day: a deploy or a new day
-// starts a fresh set, and nothing older is ever served. It is looked up in this isolate first (a Map read, and some
-// pages are asked for far more often than others), then in the data center's cache — the Cache API is only effective
-// for requests the Worker receives directly, and on 1ms.dog the pages come through the shell's service binding, so the
-// isolate is where a repeat actually lands. The copy the visitor gets still says no-cache, and the ETag answers a
-// revalidation with a 304 without rendering anything.
+// starts a fresh set, and nothing older is ever served. The isolate's own copy answers repeats; the data center's
+// Cache API gets a copy on the first repeat, and is consulted only when the isolate has lost its own (see `seen`
+// above — the pages come through the shell's service binding, and one-off crawler pages must not pay for writes).
+// The copy the visitor gets still says no-cache, and the ETag answers a revalidation with a 304 without rendering.
 const PAGE_TTL = DAY, pages = lru(16 * 1024 * 1024);
 // The build stamp scripts/build.mjs writes into every template (a hash of src/): a deploy changes it, and with it the
 // cache key, even when the assets' ETags are not to be had. The data's day covers the other input.
@@ -411,13 +435,13 @@ async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
   const u = new URL(request.url), src = new URL(o + u.pathname);
   for (const k of ["q", "host"]) if (u.searchParams.has(k)) src.searchParams.set(k, u.searchParams.get(k));
   src.searchParams.set("__pc", `${stampOf(tpl)}|${(meta && meta.at) || ""}|${extra}`);
-  const ck = src.toString();
+  const ck = src.toString(), again = seenBefore(ck);
   let v = pages.get(ck), from = "hit", fromCache = false;
-  if (!v && edgeOK) {
-    // try the data center's cache once per isolate; where the Cache API is unavailable this is a miss, not an error
+  if (!v && again && edgeOK) {
+    // where the Cache API is not available this is a miss, not an error
     try {
       const hit = await caches.default.match(new Request(ck, { method: "GET" }));
-      if (hit) { v = { status: hit.status, etag: hit.headers.get("etag") || "", html: await hit.text() }; from = "hit-edge"; fromCache = true; }
+      if (hit) { v = { status: hit.status, etag: hit.headers.get("etag") || "", html: await hit.text(), put: true }; from = "hit-edge"; fromCache = true; }
     } catch (e) { edgeOK = false; }
   }
   if (!v) {
@@ -430,7 +454,10 @@ async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
     from = "miss";
   }
   pages.set(ck, v, v.html.length * 2);
-  if (!fromCache && edgeOK && (v.status === 200 || v.status === 404)) {
+  if (!fromCache && !v.put && edgeOK && (v.status === 200 || v.status === 404) && (from === "hit" || again)) {
+    // the data center's copy is written on the first repeat, not on the first sighting: a crawler asks for each page
+    // once, and those one-off writes cost more than the hits they would ever bring (measured: +29% CPU a request)
+    v.put = true;
     // a 404 for an AS number nobody holds is a real page (robots say noindex) and scanners ask for many: kept an hour
     const ttl = v.status === 200 ? PAGE_TTL : 3600;
     const kept = new Response(v.html, { status: v.status, headers: { "Content-Type": "text/html; charset=utf-8", ETag: v.etag, "Cache-Control": `public, max-age=${ttl}` } });

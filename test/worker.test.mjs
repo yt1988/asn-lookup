@@ -58,10 +58,13 @@ test("a tracking parameter on a page is not another copy of it", { skip }, async
   const before = entries.size;
   assert.equal((await get("/AS13335?utm_source=newsletter")).status, 200);
   assert.equal(entries.size, before, "the same page, not a second copy");
-  // but the search word is part of the page
+  // but the search word is part of the page — and a page gets a data center copy on its second sighting, not its first
   const f1 = await get("/find?q=cloudflare"), f2 = await get("/find?q=china");
   assert.equal(f1.status, 200);
   assert.notEqual(await f1.text(), await f2.text());
+  assert.equal(entries.size, before, "nothing written on a first sighting");
+  await get("/find?q=cloudflare");
+  await get("/find?q=china");
   assert.equal(entries.size, before + 2);
 });
 
@@ -83,22 +86,28 @@ test("a new data day is a new entry, not yesterday's page", { skip }, async () =
   // a fresh isolate: the memoized meta and the page cache are module state
   const w2 = (await import("../src/worker.js?day=" + Date.now())).default;
   try {
-    const r = await get("/AS13335", {}, w2);
+    assert.equal((await get("/AS13335", {}, w2)).status, 200);
+    const r = await get("/AS13335", {}, w2);   // the repeat writes the data center's copy
     assert.equal(r.status, 200);
     const hit = [...entries.keys()].some(k => k.includes("__pc=") && decodeURIComponent(k).includes("2026-01-01"));
     assert.ok(hit, "an entry keyed by the different day");
   } finally { assets.fetch = old; }
 });
 
-test("the JSON lookups are kept in the data center's cache", { skip }, async () => {
+test("a JSON lookup is kept in the isolate, and written to the data center on its repeat", { skip }, async () => {
+  const before = entries.size;
   const a = await get("/api/ip/8.8.8.8");
   const j = await a.json();
-  const before = reads;
+  assert.equal(entries.size, before, "nothing written on a first sighting");
+  const n = reads;
   const b = await get("/api/ip/8.8.8.8");
   assert.equal(b.status, 200);
   assert.deepEqual(await b.json(), j);
-  assert.equal(reads, before);
+  assert.equal(reads, n);
   assert.match(b.headers.get("x-cache") || "", /^hit/);
+  assert.equal(entries.size, before + 1, "the second sighting writes it");
+  await get("/api/ip/8.8.8.8");
+  assert.equal(entries.size, before + 1, "and only once");
 });
 
 test("the pages a browser gets are still no-cache, and unknown paths stay a plain 404", { skip }, async () => {
