@@ -133,11 +133,12 @@ async function findByName(env, o, q) {
     }
   }
   if (words.length) await shardHit([...words].sort((a, b) => b.length - a.length)[0]);
-  const out = [];
-  let checked = 0;
-  for (const a of asns) {
-    if (++checked > 150) break;
-    const rec = await asRec(env, o, a);
+  const out = [], list = [...asns].slice(0, 150);
+  // one shard read per 100 AS numbers, all at once: one at a time turned a common word ("telecom") into 150 awaited
+  // reads and twenty seconds
+  const recs = await Promise.all(list.map(a => asRec(env, o, a)));
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i], rec = recs[i];
     if (!rec) continue;
     const hay = ((rec.h || "") + " " + (rec.n || "") + " " + knownAll(a)).toLowerCase();
     if (!words.every(w => hay.includes(w))) continue;
@@ -480,7 +481,7 @@ export default {
     }
     if ((m = /^\/api\/nb\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => neighbours(env, o, +m[1]));
     if ((m = /^\/api\/hist\/(\d{1,10})$/.exec(p))) return cached(request, ctx, () => history(env, +m[1]), untilRun());
-    if (p === "/api/find") return json(await findByName(env, o, (url.searchParams.get("q") || "").slice(0, 60)), 200, { "Cache-Control": "public, max-age=3600" });
+    if (p === "/api/find") return cached(request, ctx, () => findByName(env, o, (url.searchParams.get("q") || "").slice(0, 60)), 3600);
     if ((m = /^\/api\/host\/(.+)$/.exec(p))) {
       const host = hostOf(m[1]);
       if (!host) return json({ error: "not a domain" }, 400);
