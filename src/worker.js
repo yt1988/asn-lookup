@@ -198,7 +198,7 @@ const dayStr = d => d ? new Date(d * 864e5).toISOString().slice(0, 10) : "";
 
 /* ---------- live parts ---------- */
 
-// a string body is passed through: it is already JSON (see RAW above)
+// a string body is passed through: it is already JSON (the routing history, see raw() below)
 const json = (body, status = 200, extra = {}) => new Response(typeof body === "string" ? body : JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*", "X-Content-Type-Options": "nosniff", ...extra },
 });
@@ -228,13 +228,10 @@ async function cached(request, ctx, make, ttl = DAY) {
   let body, ok = true;
   try { body = await make(); } catch (e) { ok = false; body = { error: String(e && e.message || e).slice(0, 80) }; }
   if (body && body[NOCACHE]) ok = false;
-  // make() may have kept the body itself, under its own key and for its own deadline (the routing history)
-  const kept = ok && fromMemo(u);
-  const cc = kept ? kept.cc : `public, max-age=${ttl}`;
-  const text = body && body[RAW] !== undefined ? body[RAW] : JSON.stringify(body);
+  const cc = `public, max-age=${ttl}`, text = body && body[RAW] !== undefined ? body[RAW] : JSON.stringify(body);
   const res = new Response(text, { status: 200, headers: jsonHeaders(ok ? cc : "no-store") });
   if (ok) {
-    if (!kept) jsonMemo.set(u, { body: text, cc, until: Date.now() + ttl * 1000 }, text.length * 2);
+    jsonMemo.set(u, { body: text, cc, until: Date.now() + ttl * 1000 }, text.length * 2);
     try { ctx.waitUntil(caches.default.put(key, res.clone()).catch(() => {})); } catch (e) {}
   }
   return res;
@@ -304,14 +301,11 @@ const HISTORY = "https://data.1ms.dog:2083/asn/";
 async function history(env, asn) {
   const base = env.HISTORY_URL ?? HISTORY;
   if (!base) return raw("{}");
-  const u = `${base}as/${asn}.json`, m = fromMemo(u);
-  if (m) return raw(m.body);
-  const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(8000), cache: "no-store" });
+  const r = await fetch(`${base}as/${asn}.json`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(8000), cache: "no-store" });
   if (r.status === 404) return raw("{}");
   if (!r.ok) throw new Error("HTTP " + r.status);
   const text = (await r.text()).trim();
   if (!/^[[{]/.test(text)) throw new Error("not JSON");
-  jsonMemo.set(u, { body: text, cc: `public, max-age=${untilRun()}`, until: nextRun() }, text.length * 2);
   return raw(text);
 }
 const nextRun = (now = Date.now()) => {
