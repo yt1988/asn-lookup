@@ -28,6 +28,12 @@ test("every language has every key, with the same placeholders", () => {
   }
 });
 
+test("the Worker can load every language it serves", async () => {
+  // the tables are lazy imports now (src/worker.js); a language with no loader would throw on its first page
+  const worker = await read("src/worker.js");
+  for (const [lang] of LANGS) assert.ok(worker.includes(`import("./i18n/${lang}.mjs")`), `no loader for ${lang}`);
+});
+
 test("every key the code asks for exists", async () => {
   const [app, render, page, worker] = await Promise.all(["src/app.js", "src/render.mjs", "src/page.html", "src/worker.js"].map(read));
   const keys = new Set([
