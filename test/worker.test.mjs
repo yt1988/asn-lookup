@@ -48,6 +48,8 @@ test("a page is rendered once and then served from the isolate's cache", { skip 
   assert.equal(b.status, 200);
   assert.equal(await b.text(), await a.text());
   assert.equal(reads, before, "the second request reads no shard or template");
+  assert.equal(a.headers.get("x-cache"), "miss");
+  assert.equal(b.headers.get("x-cache"), "hit");
   assert.equal(b.headers.get("cache-control"), "public, max-age=0, must-revalidate");
 });
 
@@ -96,6 +98,7 @@ test("the JSON lookups are kept in the data center's cache", { skip }, async () 
   assert.equal(b.status, 200);
   assert.deepEqual(await b.json(), j);
   assert.equal(reads, before);
+  assert.match(b.headers.get("x-cache") || "", /^hit/);
 });
 
 test("the pages a browser gets are still no-cache, and unknown paths stay a plain 404", { skip }, async () => {

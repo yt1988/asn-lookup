@@ -215,21 +215,21 @@ async function getJSON(u, ms = 6000, headers = {}, fresh = false) {
 // registries or RIPE again.
 const NOCACHE = Symbol("nocache"), RAW = Symbol("raw"), jsonMemo = lru(8 * 1024 * 1024);
 const raw = text => ({ [RAW]: text });   // a body that is already JSON and never looked into here (the routing history)
-const jsonHeaders = cc => ({ "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*",
-  "X-Content-Type-Options": "nosniff", ...(cc ? { "Cache-Control": cc } : {}) });
+const jsonHeaders = (cc, from) => ({ "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*",
+  "X-Content-Type-Options": "nosniff", ...(cc ? { "Cache-Control": cc } : {}), ...(from ? { "X-Cache": from } : {}) });
 const fromMemo = u => { const m = jsonMemo.get(u); return m && m.until > Date.now() ? m : null; };
 async function cached(request, ctx, make, ttl = DAY) {
   const u = new URL(request.url).toString(), key = new Request(u, { method: "GET" });
   let hit = null;
   try { hit = await caches.default.match(key); } catch (e) {}
-  if (hit) return hit;
+  if (hit) { const h = new Headers(hit.headers); h.set("X-Cache", "hit-edge"); return new Response(hit.body, { status: hit.status, headers: h }); }
   const m = fromMemo(u);
-  if (m) return new Response(m.body, { status: 200, headers: jsonHeaders(m.cc) });
+  if (m) return new Response(m.body, { status: 200, headers: jsonHeaders(m.cc, "hit") });
   let body, ok = true;
   try { body = await make(); } catch (e) { ok = false; body = { error: String(e && e.message || e).slice(0, 80) }; }
   if (body && body[NOCACHE]) ok = false;
   const cc = `public, max-age=${ttl}`, text = body && body[RAW] !== undefined ? body[RAW] : JSON.stringify(body);
-  const res = new Response(text, { status: 200, headers: jsonHeaders(ok ? cc : "no-store") });
+  const res = new Response(text, { status: 200, headers: jsonHeaders(ok ? cc : "no-store", "miss") });
   if (ok) {
     jsonMemo.set(u, { body: text, cc, until: Date.now() + ttl * 1000 }, text.length * 2);
     try { ctx.waitUntil(caches.default.put(key, res.clone()).catch(() => {})); } catch (e) {}
@@ -399,12 +399,12 @@ async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
   for (const k of ["q", "host"]) if (u.searchParams.has(k)) src.searchParams.set(k, u.searchParams.get(k));
   src.searchParams.set("__pc", `${stampOf(tpl)}|${(meta && meta.at) || ""}|${extra}`);
   const ck = src.toString();
-  let v = pages.get(ck), fromCache = false;
+  let v = pages.get(ck), from = "hit", fromCache = false;
   if (!v && edgeOK) {
     // try the data center's cache once per isolate; where the Cache API is unavailable this is a miss, not an error
     try {
       const hit = await caches.default.match(new Request(ck, { method: "GET" }));
-      if (hit) { v = { status: hit.status, etag: hit.headers.get("etag") || "", html: await hit.text() }; fromCache = true; }
+      if (hit) { v = { status: hit.status, etag: hit.headers.get("etag") || "", html: await hit.text() }; from = "hit-edge"; fromCache = true; }
     } catch (e) { edgeOK = false; }
   }
   if (!v) {
@@ -413,17 +413,18 @@ async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
     v = await render(env, o, lang, site, r, name);
     if (!v) return new Response("Not built", { status: 503 });
     // a 404 page (an AS nobody holds) is kept here like the rest: it is cheap to render but it is asked for a lot
+    from = "miss";
   }
   pages.set(ck, v, v.html.length * 2);
   if (!fromCache && edgeOK && v.status === 200) {
     const kept = new Response(v.html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", ETag: v.etag, "Cache-Control": `public, max-age=${PAGE_TTL}` } });
     try { ctx.waitUntil(caches.default.put(new Request(ck, { method: "GET" }), kept).catch(() => { edgeOK = false; })); } catch (e) { edgeOK = false; }
   }
-  return clientPage(v, request);
+  return clientPage(v, request, from);
 }
-async function clientPage(v, request) {
+async function clientPage(v, request, from = "miss") {
   const headers = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=0, must-revalidate", ETag: v.etag,
-    "Content-Security-Policy": csp(await prepaintSha()), ...HEADERS };
+    "Content-Security-Policy": csp(await prepaintSha()), "X-Cache": from, ...HEADERS };
   const inm = request.headers.get("if-none-match");
   if (v.status === 200 && v.etag && inm && inm.split(",").map(s => s.trim()).includes(v.etag)) return new Response(null, { status: 304, headers });
   return new Response(request.method === "HEAD" ? null : v.html, { status: v.status, headers });
@@ -479,11 +480,14 @@ export default {
     if ((m = /^\/api\/host\/(.+)$/.exec(p))) {
       const host = hostOf(m[1]);
       if (!host) return json({ error: "not a domain" }, 400);
-      const rows = await hostRows(env, o, host);
-      return json({ host, rows: rows.map(r => ({ ip: r.ip, asn: r.asn || null, cc: (r.rec && r.rec.cc) || null, prefix: r.pfx || null })) }, 200, { "Cache-Control": "public, max-age=300" });
+      // 5 minutes: the addresses are live DNS, and the browser was already told to keep it that long
+      return cached(request, ctx, async () => {
+        const rows = await hostRows(env, o, host);
+        return { host, rows: rows.map(r => ({ ip: r.ip, asn: r.asn || null, cc: (r.rec && r.rec.cc) || null, prefix: r.pfx || null })) };
+      }, 300);
     }
-    if (p === "/api/top") return json((await asset(env, o, "/data/top.json")) || {}, 200, { "Cache-Control": "public, max-age=3600" });
-    if (p === "/api/moas") return json((await asset(env, o, "/data/moas.json")) || {}, 200, { "Cache-Control": "public, max-age=3600" });
+    if (p === "/api/top") return cached(request, ctx, async () => (await asset(env, o, "/data/top.json")) || {}, 3600);
+    if (p === "/api/moas") return cached(request, ctx, async () => (await asset(env, o, "/data/moas.json")) || {}, 3600);
     if (p.startsWith("/api/")) return json({ error: "not found" }, 404);
 
     /* pages */
