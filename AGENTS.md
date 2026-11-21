@@ -2,7 +2,8 @@
 
 For anyone working in this repository, people and AI agents alike. What the tool shows and where its data comes from
 are in [README.md](README.md); the technical reasons behind the routing history, and what was measured, are in
-[docs/history.md](docs/history.md). 1ms.dog's operations notes are in the private repository 1ms-shell.
+[docs/history.md](docs/history.md); how the Worker caches pages and lookups, and what was measured, are in
+[docs/caching.md](docs/caching.md). 1ms.dog's operations notes are in the private repository 1ms-shell.
 
 ## What this is
 
