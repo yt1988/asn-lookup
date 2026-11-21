@@ -11,7 +11,6 @@
 //   /api/hist/<n>               the AS's routing history (history/), cached until the next daily run
 // Pages are rendered into public/tpl/<lang>.html (the home page without its content), so every page has the same head,
 // header, help and scripts as the home page.
-import { STRINGS } from "./strings.mjs";
 import { LANGS, BY_SLUG, SLUG } from "./langs.mjs";
 import { family, canon, isPublic, v4num, v6big, v4str, v6str, find4, find6, parseCidr } from "./ip.mjs";
 import { asPage, ipPage, findPage, hostPage, topPage, moasPage, todayPage, browsePage, browseIndexPage, toolsPage, head, esc, path } from "./render.mjs";
@@ -23,6 +22,21 @@ const BUCKET = 100, NAMES = 1000;
 const DAY = 86400;
 const UA = "asn-lookup (+https://github.com/yt1988/asn-lookup)";
 const PATHS = Object.fromEntries(LANGS.map(([l, s]) => [l, path(s)]));
+
+// The strings of one language, loaded when a page in it is rendered. A Worker runs the top-level code of everything it
+// imports at startup, and the ten language tables are 140 KB of the 223 KB bundle: an isolate that only serves English
+// pages (or only API calls) should not pay for Russian and Japanese, and the startup is 1.3 ms of a request's CPU.
+const LOADERS = {
+  en: () => import("./i18n/en.mjs"), "zh-CN": () => import("./i18n/zh-CN.mjs"), "zh-TW": () => import("./i18n/zh-TW.mjs"),
+  ja: () => import("./i18n/ja.mjs"), ko: () => import("./i18n/ko.mjs"), es: () => import("./i18n/es.mjs"),
+  fr: () => import("./i18n/fr.mjs"), de: () => import("./i18n/de.mjs"), pt: () => import("./i18n/pt.mjs"), ru: () => import("./i18n/ru.mjs"),
+};
+const STRINGS = new Map();
+function strings(lang) {
+  let p = STRINGS.get(lang);
+  if (!p) STRINGS.set(lang, p = LOADERS[lang]().then(m => m.default));
+  return p;
+}
 
 /* ---------- static data, kept per isolate ---------- */
 
@@ -363,12 +377,11 @@ async function prepaintSha() {
 }
 const djb2 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
 
-async function render(env, o, lang, site, r, page) {
+async function render(env, o, lang, site, r, page, T) {
   const tpl = await asset(env, o, `/tpl/${lang === "en" ? "en" : SLUG[lang]}.html`, "text");
   if (!tpl) return null;
   const meta = await asset(env, o, "/data/meta.json");
   const etag = `W/"${djb2([tpl.etag, meta && meta.at, lang, r.rest, r.status, r.hostKey || "", r.data && r.data.shared || ""].join("|"))}"`;
-  const T = k => STRINGS[lang][k];
   const html = tpl.text
     .replace("{{rootAttr}}", lang === "en" ? " data-root" : "")
     .replace("{{head}}", () => head({ T, lang, site, rest: r.rest, title: r.title, desc: r.desc, robots: r.robots, graph: r.graph || [] }))
@@ -410,7 +423,8 @@ async function page(request, ctx, env, o, lang, site, build, name, extra = "") {
   if (!v) {
     const r = await build();
     if (!r) return notFound();
-    v = await render(env, o, lang, site, r, name);
+    const S = await strings(lang);
+    v = await render(env, o, lang, site, r, name, k => S[k]);
     if (!v) return new Response("Not built", { status: 503 });
     // a 404 page (an AS nobody holds) is kept here like the rest: it is cheap to render but it is asked for a lot
     from = "miss";
@@ -495,9 +509,10 @@ export default {
     /* pages */
     let lang = "en";
     if ((m = /^\/([a-z]{2}(?:-[a-z]{2})?)(\/.*)$/.exec(p)) && BY_SLUG[m[1]] && m[1]) { lang = BY_SLUG[m[1]]; p = m[2]; }
-    const home = PATHS[lang], T = k => STRINGS[lang][k];
+    const home = PATHS[lang];
 
     if (p === "/q") return redirect(await search(url.searchParams.get("s"), home), 302);
+    const S = await strings(lang), T = k => S[k];
 
     // the pages that are not one AS or one address: search results, hosts, leaderboards, countries and registries
     if (p === "/find") {
@@ -554,7 +569,7 @@ export default {
       if (!host) return notFound();
       // not cached: the addresses are live DNS, and a page kept for a day would keep a moved site on its old network
       const meta = await asset(env, o, "/data/meta.json");
-      const v = await render(env, o, lang, site, hostPage({ T, lang, site, host, rows: await hostRows(env, o, host), meta }), "host");
+      const v = await render(env, o, lang, site, hostPage({ T, lang, site, host, rows: await hostRows(env, o, host), meta }), "host", T);
       return v ? clientPage(v, request) : new Response("Not built", { status: 503 });
     }
 
