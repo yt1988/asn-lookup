@@ -58,8 +58,10 @@ page is built.
 - `/host/<domain>` — the page holds live DNS answers and is rendered on every request. (`/api/host` keeps its answer
   for five minutes, and the browser was already told to keep it that long.)
 
-A reverse proxy in front of the Worker may rewrite `Cache-Control` on what it caches; that is outside this Worker and
-outside this repository.
+A reverse proxy in front of the Worker may rewrite `Cache-Control` on what it caches — a zone-wide browser TTL, for
+example, can turn the five minutes above into hours. If one does, give `/api/host/` its own rule that passes the
+Worker's headers through (the addresses are live DNS), and check the rest of `/api/` the same way: the Worker's
+`max-age` is the intent, and a proxy that lengthens it changes the answer's meaning, not just its freshness.
 
 ## Reading many shards: await them together, never one after another
 
