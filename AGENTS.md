@@ -21,8 +21,8 @@ ASN Lookup answers "who owns this IP?" and "what is this AS?". It has three part
   `/tools`. Strings are in `src/i18n/<lang>.mjs`, ten languages.
 - **The routing history** (`history/`, Go, standard library only): a separate program that runs once a day on a
   machine with a disk, keeps who announced what day by day with its RPKI state, and writes one JSON file per AS. The
-  Worker fetches those files from `HISTORY_URL` (`/api/hist/<asn>`). Without it the site works the same, minus the
-  routing-history card and rows.
+  Worker fetches those files from `DATA_URL` (its `/asn/` part, `/api/hist/<asn>`). Without it the site works the same,
+  minus the routing-history card and rows.
 
 ## Run it locally
 
@@ -42,7 +42,7 @@ go run . -state ./st -out ./out -day 2026-01-02 -ris4 r4.gz  # a later day, from
 ```
 
 `./out` then holds `meta.json` and `as/<asn>.json`; serve it over HTTP and run `npx wrangler dev --var
-HISTORY_URL:http://127.0.0.1:<port>/`.
+DATA_URL:http://127.0.0.1:<port>` (the Worker looks in its `/asn/` part).
 
 ## Test by what you changed
 
@@ -67,7 +67,9 @@ HISTORY_URL:http://127.0.0.1:<port>/`.
 - **Daily data**: `.github/workflows/refresh.yml` commits `data.stamp` once a day, and the push rebuilds the site.
   Without Workers Builds, run `npm run data && npx wrangler deploy` on a schedule.
 - **The routing history**: by hand, as below; a push doesn't deploy it, it only publishes a new Release of the
-  program when `history/` changed. Set `HISTORY_URL = ""` under `[vars]` to leave it out.
+  program when `history/` changed. The Worker reads the results directory from `DATA_URL`, set as a secret with
+  `wrangler secret put DATA_URL` (or in the dashboard), not in `wrangler.toml`: a plain `[vars]` value is wiped by the
+  next Workers Builds deploy. Leave it unset to leave the history out.
 
 ## The routing history, self-hosted
 
@@ -100,8 +102,9 @@ directory read-only over HTTPS (any web server; the Worker fetches the files and
    `GOMEMLIMIT=120MiB` and `StandardOutput=null` (only errors reach the journal). The timer's time must be before
    04:30 UTC, when the Worker lets its copies go.
 4. `systemctl daemon-reload && systemctl enable --now <name>.timer`, then `systemctl start <name>` for a first run.
-5. **Publish** `/srv/<data-dir>/` read-only with CORS (`Access-Control-Allow-Origin: *`) and a short cache, and set
-   `HISTORY_URL = "https://<data-host>/<path>/"` (with the trailing slash) in `wrangler.toml`.
+5. **Publish** `/srv/<data-dir>/` read-only at `https://<data-host>/<path>/asn/` with CORS
+   (`Access-Control-Allow-Origin: *`) and a short cache, and set `DATA_URL = "https://<data-host>/<path>"` (the Worker
+   appends `/asn/`) as a secret.
 
 **Verify**: `cat /srv/<data-dir>/meta.json` (`day` is today, `took` and `peak_mb` that run's figures); then
 `https://<your-domain>/api/hist/13335` returns that AS's file, and the AS page shows the routing-history card.

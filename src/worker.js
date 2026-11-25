@@ -331,15 +331,15 @@ async function neighbours(env, o, asn) {
   return out;
 }
 // The routing history of an AS (history/README.md), written once a day at 03:40 UTC by asn-history on the 1ms.dog
-// server; kept here until the next run's files are in (04:30 UTC). An AS with no history: {}. HISTORY_URL: where the
-// files are, "" for none (self-hosting without the server).
-const HISTORY = "https://data.1ms.dog:2083/asn/";
+// server; kept here until the next run's files are in (04:30 UTC). An AS with no history: {}. DATA_URL: the results
+// directory (its /asn/ part), unset for none (self-hosting without the server).
 // The file is passed through as it comes: it is 65–300 KB of JSON nobody here looks into, and parsing it only to
 // serialize it again was most of the CPU this Worker spent (measured locally: 1.7 ms to parse + 1.2 ms to write a
 // 295 KB file). The body is checked to be an object or `{}` for an AS with no history.
 async function history(env, asn) {
-  const base = env.HISTORY_URL ?? HISTORY;
-  if (!base) return raw("{}");
+  const root = (env.DATA_URL || "").replace(/\/+$/, "");
+  if (!root) return raw("{}");
+  const base = root + "/asn/";
   const r = await fetch(`${base}as/${asn}.json`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(8000), cache: "no-store" });
   if (r.status === 404) return raw("{}");
   if (!r.ok) throw new Error("HTTP " + r.status);
@@ -356,8 +356,9 @@ const untilRun = (now = Date.now()) => Math.max(600, Math.round((nextRun(now) - 
 // the same deadline as the AS files; a failed fetch is retried on the next request.
 let histMeta = { exp: 0, v: null };
 async function historyMeta(env) {
-  const base = env.HISTORY_URL ?? HISTORY;
-  if (!base) return null;
+  const root = (env.DATA_URL || "").replace(/\/+$/, "");
+  if (!root) return null;
+  const base = root + "/asn/";
   if (histMeta.v && Date.now() < histMeta.exp) return histMeta.v;
   try { const v = await getJSON(`${base}meta.json`, 6000, {}, true); histMeta = { exp: Date.now() + untilRun() * 1000, v }; return v; } catch { return null; }
 }

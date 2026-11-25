@@ -19,7 +19,7 @@ About 12 MB downloaded a day (the VRPs come gzipped).
 
 ## What it writes
 
-`-out` (published read-only over HTTPS; the Worker's `HISTORY_URL` points at it):
+`-out` (published read-only over HTTPS; the Worker reads it from the `/asn/` part of `DATA_URL`):
 
 ```
 meta.json        since (the first day recorded), day (the last run), at, ris and vrp_at (when the sources were made),
