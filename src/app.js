@@ -156,7 +156,7 @@ import { parseCidr, v4num, v6big, rangeToCidrs4, rangeToCidrs6 } from "./ip.mjs"
       return d + `H${W}`;
     };
     const has6 = pts.some(p => p[2]);
-    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(t("hist_trend"))}">` +
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(t("hist_trend"))}">` +
       (has6 ? `<path class="l6" d="${line(2)}"/>` : "") + `<path class="l4" d="${line(1)}"/></svg>` +
       `<div class="ax m"><span>${esc(day(new Date(start * 864e5).toISOString().slice(0, 10)))}</span>` +
       `<span><i class="k4"></i>IPv4${has6 ? ' <i class="k6"></i>IPv6' : ""}</span><span>${esc(day(h.day))}</span></div>`;
