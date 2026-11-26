@@ -82,7 +82,9 @@ import { parseCidr, v4num, v6big, rangeToCidrs4, rangeToCidrs6 } from "./ip.mjs"
   if (shareBtn && D.card) {
     shareBtn.hidden = false;
     shareBtn.onclick = async () => {
-      const { share } = await import("/assets/share/share.js?v=10");
+      const mod = await import("/assets/share/share.js?v=11").catch(() => null);
+      if (!mod) { window.msShareDown && window.msShareDown(); return; }
+      const { share } = mod;
       const url = location.origin + HOME + "r/1~" + Date.now().toString(36) + "~" + D.rest;
       share({
         lang: LANG, name: t("app_name"), file: D.card.big.replace(/[^\w.-]+/g, "_"),
@@ -94,7 +96,7 @@ import { parseCidr, v4num, v6big, rangeToCidrs4, rangeToCidrs6 } from "./ip.mjs"
   }
   // someone's shared AS or address: the banner above it, whose button looks up the visitor's own (their AS on an AS
   // page, their address on an address page)
-  if (D.shared) import("/assets/share/share.js?v=10").then(({ received }) => received({
+  if (D.shared) import("/assets/share/share.js?v=11").then(({ received }) => received({
     lang: LANG, ts: D.shared, at: $(".hero"),
     test: async () => {
       try {
